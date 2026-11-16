@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Alert,
+  Animated,
   AppState,
   type AppStateStatus,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -11,6 +13,7 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
 import { api, ApiFailure, messageFor, newIdempotencyKey } from '../api/client'
 import type { PunchResponse, TodayStatus } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
@@ -60,12 +63,18 @@ export default function HomeScreen({
   const [pickingCompany, setPickingCompany] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [switchError, setSwitchError] = useState<string | null>(null)
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const popupAnim = useRef(new Animated.Value(0)).current
 
   const idemKey = useRef(newIdempotencyKey())
   const employeeId = session?.employee.id
   const companyId = session?.company?.id ?? null
   const companyName = session?.company?.name_ar || session?.company?.name || null
   const canSwitch = companies.length > 1
+  const userName = session?.user?.full_name ?? ''
+  const firstName = userName.split(/[\s\u0600-\u06FF]+/)[0] || 'مستخدم'
+  const userInitial = userName.charAt(0) || 'م'
+  const isCheckedIn = today?.last_punch !== null
   /** Tracks the last date we loaded today's status for, to detect a local date change. */
   const lastDateRef = useRef<string | null>(null)
 
@@ -157,15 +166,8 @@ export default function HomeScreen({
         idemKey.current = newIdempotencyKey()
       }
     } finally {
-      setPunching(false)
+      setSwitching(false)
     }
-  }
-
-  function confirmSignOut() {
-    Alert.alert('تسجيل الخروج', 'ستُلغى جلستك على هذا الجهاز. متابعة؟', [
-      { text: 'إلغاء', style: 'cancel' },
-      { text: 'خروج', style: 'destructive', onPress: () => void signOut() },
-    ])
   }
 
   async function pickCompany(id: string) {
@@ -185,6 +187,35 @@ export default function HomeScreen({
     } finally {
       setSwitching(false)
     }
+  }
+
+  const toggleAccountMenu = () => {
+    setAccountMenuOpen((prev) => {
+      if (!prev) {
+        Animated.timing(popupAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: false,
+        }).start()
+      }
+      return !prev
+    })
+  }
+
+  const closeAccountMenu = () => {
+    Animated.timing(popupAnim, {
+      toValue: 0,
+      duration: 100,
+      useNativeDriver: false,
+    }).start(() => setAccountMenuOpen(false))
+  }
+
+  const handleLogoutPress = () => {
+    closeAccountMenu()
+    Alert.alert('تسجيل الخروج', 'هل تريد تسجيل الخروج؟', [
+      { text: 'إلغاء', style: 'cancel' },
+      { text: 'خروج', style: 'destructive', onPress: () => void signOut() },
+    ])
   }
 
   if (pickingCompany) {
@@ -219,43 +250,99 @@ export default function HomeScreen({
         />
       }
     >
-      <View style={[s.header, { paddingTop: insets.top + spacing.md }]}>
-        <View style={s.headerText}>
-          <Text style={s.greeting}>أهلًا</Text>
-          <Text style={s.name}>{session?.user.full_name}</Text>
-          {session?.site ? <Text style={s.site}>{session.site.name_ar}</Text> : null}
-          {companyName ? (
-            <View style={s.companyRow}>
-              <View style={s.companyDot} />
-              <Text style={s.companyName} numberOfLines={1}>
-                {companyName}
-              </Text>
-              {canSwitch ? (
-                <Pressable
-                  onPress={() => setPickingCompany(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="تبديل الشركة"
-                  hitSlop={8}
-                  style={({ pressed }) => [s.companySwitch, pressed && s.pressed]}
-                >
-                  <Icon name="refresh-cw" size={14} color={colors.tealBright} accessible={false} />
-                  <Text style={s.companySwitchText}>تبديل</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
-        </View>
+      <View style={[s.header, { paddingTop: insets.top + spacing.xs }]}>
+        {/* Avatar — RTL start (right side) */}
         <Pressable
-          onPress={confirmSignOut}
+          onPress={toggleAccountMenu}
           accessibilityRole="button"
-          accessibilityLabel="تسجيل الخروج"
-          hitSlop={8}
-          style={({ pressed }) => [s.logout, pressed && s.pressed]}
+          accessibilityLabel="قائمة الحساب"
+          hitSlop={12}
+          style={s.avatarPressable}
         >
-          <Icon name="log-out" size={16} color={colors.textMuted} accessible={false} />
-          <Text style={s.logoutText}>خروج</Text>
+          <View style={s.avatarWrap}>
+            <LinearGradient
+              colors={['#14B8A6', '#7C3AED']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={s.avatarGradient}
+            >
+              <Text style={s.avatarText}>{userInitial}</Text>
+            </LinearGradient>
+            <View style={[s.statusDot, isCheckedIn ? s.statusOnline : s.statusOffline]} />
+          </View>
+        </Pressable>
+
+        {/* Text column */}
+        <View style={s.headerText}>
+          <Text style={s.greeting}>أهلاً، {firstName}</Text>
+          <View style={s.siteRow}>
+            <Icon name="building" size={16} color={colors.teal} accessible={false} />
+            <Text style={s.siteName} numberOfLines={1}>
+              {session?.site?.name_ar || companyName || ''}
+            </Text>
+          </View>
+        </View>
+
+        {/* Notifications — RTL end (left side) */}
+        <Pressable
+          onPress={onOpenInbox}
+          accessibilityRole="button"
+          accessibilityLabel="الإشعارات"
+          hitSlop={12}
+          style={s.notifPressable}
+        >
+          <View style={s.notifWrap}>
+            <Icon name="bell" size={iconSize.md} color={colors.textMuted} accessible={false} />
+            {typeof pendingCount === 'number' && pendingCount > 0 ? (
+              <View style={s.badgeWrap}>
+                <Text style={s.badgeText}>{pendingCount > 99 ? '٩٩+' : pendingCount}</Text>
+              </View>
+            ) : null}
+          </View>
         </Pressable>
       </View>
+
+      {accountMenuOpen ? (
+        <Pressable
+          style={s.popupBackdrop}
+          onPress={closeAccountMenu}
+          accessibilityRole="button"
+          accessibilityLabel="إغلاق القائمة"
+        >
+          <Animated.View
+            style={[
+              s.popup,
+              { right: spacing.sm, top: insets.top + 72 + spacing.sm },
+              {
+                opacity: popupAnim,
+                transform: [
+                  {
+                    scale: popupAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.95, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={s.popupHeader}>
+              <Text style={s.popupName}>{userName}</Text>
+              <Text style={s.popupRole}>{session?.site?.name_ar || ''}</Text>
+            </View>
+            <View style={s.popupDivider} />
+            <Pressable
+              onPress={handleLogoutPress}
+              accessibilityRole="button"
+              accessibilityLabel="تسجيل الخروج"
+              style={s.popupItem}
+            >
+              <Icon name="log-out" size={16} color={colors.danger} accessible={false} />
+              <Text style={s.popupItemText}>تسجيل الخروج</Text>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      ) : null}
 
       <View style={s.body}>
         {passwordWarn ? (
@@ -401,84 +488,167 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   content: { paddingBottom: spacing.xxl },
   header: {
-    backgroundColor: colors.header,
+    backgroundColor: colors.page,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSoft,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: 20,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.md,
+    position: 'relative',
+    minHeight: 72,
   },
   headerText: { flex: 1 },
   pressed: { opacity: 0.7 },
-  logout: {
-    minHeight: MIN_TOUCH,
-    minWidth: MIN_TOUCH,
-    paddingHorizontal: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    backgroundColor: colors.cardRaised,
-    borderWidth: 1,
-    borderColor: colors.borderRaised,
-  },
-  logoutText: {
-    color: colors.textMuted,
-    fontSize: font.size.md,
-    fontFamily: font.familySemiBold,
-  },
   greeting: {
-    color: colors.textFaint,
+    color: '#94A3B8',
     fontSize: font.size.md,
     fontFamily: font.family,
     textAlign: 'right',
   },
-  name: {
-    color: colors.text,
-    fontSize: font.size.display,
-    fontFamily: font.familySemiBold,
-    textAlign: 'right',
-    marginTop: 2,
-  },
-  site: {
-    color: colors.teal,
-    fontSize: font.size.md,
-    fontFamily: font.familyMedium,
-    textAlign: 'right',
-    marginTop: 6,
-  },
-  companyRow: {
+  siteRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: 8,
+    gap: spacing.xs,
   },
-  companyDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.teal,
-  },
-  companyName: {
-    flexShrink: 1,
-    color: colors.textMuted,
-    fontSize: font.size.md,
-    fontFamily: font.familyMedium,
+  siteName: {
+    color: colors.text,
+    fontSize: font.size.lg,
+    fontFamily: font.familySemiBold,
     textAlign: 'right',
   },
-  companySwitch: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.tealBorder,
-    backgroundColor: colors.tealSurface,
+  // Avatar
+  avatarPressable: {
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  companySwitchText: {
-    color: colors.tealBright,
-    fontSize: font.size.sm,
+  avatarWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  avatarGradient: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: colors.text,
+    fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
+    textAlign: 'center',
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    borderWidth: 2,
+    borderColor: colors.page,
+  },
+  statusOnline: {
+    backgroundColor: colors.success,
+  },
+  statusOffline: {
+    backgroundColor: colors.textFaint,
+  },
+  // Notifications
+  notifPressable: {
+    minHeight: 40,
+    minWidth: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#131C2B',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+  },
+  notifWrap: {
+    position: 'relative',
+  },
+  badgeWrap: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.danger,
+    borderRadius: radius.pill,
+    minWidth: 18,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: colors.page,
+    fontSize: 10,
+    fontFamily: font.familyBold,
+    textAlign: 'center',
+  },
+  // Account popup menu
+  popupBackdrop: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 100,
+  },
+  popup: {
+    position: 'absolute',
+    right: spacing.sm,
+    top: 0,
+    width: 240,
+    backgroundColor: '#131C2B',
+    borderWidth: 1,
+    borderColor: '#1F2A3D',
+    borderRadius: radius.lg,
+    padding: spacing.xs,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    zIndex: 101,
+  },
+  popupHeader: {
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  popupName: {
+    color: colors.text,
+    fontSize: font.size.base,
+    fontFamily: font.familySemiBold,
+    textAlign: 'right',
+  },
+  popupRole: {
+    color: colors.textMuted,
+    fontSize: font.size.sm,
+    fontFamily: font.family,
+    textAlign: 'right',
+  },
+  popupDivider: {
+    height: 1,
+    backgroundColor: '#1F2A3D',
+    marginVertical: spacing.xs,
+  },
+  popupItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+    minHeight: 48,
+  },
+  popupItemText: {
+    color: colors.text,
+    fontSize: font.size.md,
+    fontFamily: font.familySemiBold,
+    textAlign: 'right',
   },
   body: { padding: spacing.lg, gap: spacing.lg },
   cardHead: {
