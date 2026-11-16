@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,7 +18,8 @@ import {
   SolidButton,
   TypeBadge,
 } from '../components/ui'
-import { colors, font, radius, spacing } from '../theme/tokens'
+import { Icon } from '../components/Icon'
+import { colors, elevation, font, radius, spacing } from '../theme/tokens'
 
 interface Props {
   requestId: string
@@ -117,8 +117,11 @@ export default function RequestDetailScreen({
     return (
       <View style={s.screen}>
         <ScreenHeader title="تفاصيل الطلب" onBack={onBack} />
-        <View style={s.center}>
-          <ActivityIndicator color={colors.teal} />
+        <View style={s.skeletonContainer}>
+          <View style={s.skeletonLine} />
+          <View style={[s.skeletonLine, { width: '40%' }]} />
+          <View style={s.skeletonLine} />
+          <View style={[s.skeletonLine, { width: '60%' }]} />
         </View>
       </View>
     )
@@ -228,6 +231,7 @@ export default function RequestDetailScreen({
                 label="موافقة"
                 tone="approve"
                 style={s.flex2}
+                iconName="check-circle"
                 busy={submitting === 'approve'}
                 disabled={submitting !== null}
                 onPress={() => decide('approve')}
@@ -249,6 +253,7 @@ export default function RequestDetailScreen({
                 label="تأكيد الرفض"
                 tone="reject"
                 style={s.flex2}
+                iconName="x-circle"
                 busy={submitting === 'reject'}
                 disabled={rejectBlocked || submitting !== null}
                 onPress={() => decide('reject')}
@@ -289,6 +294,15 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.lg,
     padding: spacing.xl,
+  },
+  skeletonContainer: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  skeletonLine: {
+    height: 16,
+    borderRadius: 4,
+    backgroundColor: colors.cardRaised,
   },
   centerText: {
     color: colors.textMuted,

@@ -19,6 +19,7 @@ import {
   spacing,
 } from '../theme/tokens'
 import type { RequestType } from '../api/types'
+import { Icon } from './Icon'
 
 /** The one primary action per screen. Never two on the same screen. */
 export function GradientButton({
@@ -26,15 +27,17 @@ export function GradientButton({
   onPress,
   busy,
   disabled,
-  icon,
+  iconName,
 }: {
   label: string
   onPress: () => void
   busy?: boolean
   disabled?: boolean
-  icon?: React.ReactNode
+  /** Feather icon name shown next to the label. */
+  iconName?: string
 }) {
   const off = disabled || busy
+  const iconEl = iconName ? <Icon name={iconName} size={16} accessible={false} /> : null
   return (
     <Pressable
       onPress={onPress}
@@ -58,7 +61,7 @@ export function GradientButton({
           <ActivityIndicator color={colors.text} />
         ) : (
           <>
-            {icon}
+            {iconEl}
             <Text style={ui.gradText}>{label}</Text>
           </>
         )}
@@ -74,6 +77,7 @@ export function SolidButton({
   busy,
   disabled,
   style,
+  iconName,
 }: {
   label: string
   onPress: () => void
@@ -81,6 +85,7 @@ export function SolidButton({
   busy?: boolean
   disabled?: boolean
   style?: ViewStyle
+  iconName?: string
 }) {
   const off = disabled || busy
   const toneStyle =
@@ -91,6 +96,7 @@ export function SolidButton({
       : tone === 'reject'
         ? ui.rejectText
         : ui.neutralText
+  const iconEl = iconName ? <Icon name={iconName} size={16} accessible={false} /> : null
   return (
     <Pressable
       onPress={onPress}
@@ -108,7 +114,10 @@ export function SolidButton({
       {busy ? (
         <ActivityIndicator color={tone === 'approve' ? colors.successText : colors.danger} />
       ) : (
-        <Text style={textStyle}>{label}</Text>
+        <>
+          {iconEl}
+          <Text style={textStyle}>{label}</Text>
+        </>
       )}
     </Pressable>
   )
@@ -203,6 +212,11 @@ export function Banner({
   tone: 'warn' | 'error' | 'info'
   children: React.ReactNode
 }) {
+  const iconMap = {
+    warn: 'alert-triangle',
+    error: 'alert-circle',
+    info: 'info',
+  }
   const map = {
     warn: { bg: colors.warningSurface, bd: colors.warningBorder, fg: colors.warningText },
     error: { bg: colors.dangerSurface, bd: colors.dangerBorder, fg: colors.danger },
@@ -210,6 +224,7 @@ export function Banner({
   }[tone]
   return (
     <View style={[ui.banner, { backgroundColor: map.bg, borderColor: map.bd }]}>
+      <Icon name={iconMap[tone]} size={14} color={map.fg} accessible={false} />
       <Text style={[ui.bannerText, { color: map.fg }]}>{children}</Text>
     </View>
   )
@@ -245,6 +260,7 @@ const ui = StyleSheet.create({
     justifyContent: 'center',
     gap: 9,
   },
+  gradIcon: {},
   gradText: {
     color: colors.text,
     fontSize: font.size.xl,

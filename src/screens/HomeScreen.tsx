@@ -19,8 +19,9 @@ import {
   usePunchLocation,
 } from '../location/usePunchLocation'
 import { Banner, Card, GradientButton } from '../components/ui'
+import { Icon } from '../components/Icon'
 import CompanyPickerScreen from './CompanyPickerScreen'
-import { colors, font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
+import { colors, elevation, font, iconSize, MIN_TOUCH, radius, spacing } from '../theme/tokens'
 
 /** Show the password-expiry warning from this many days out. */
 const PASSWORD_WARN_DAYS = 7
@@ -237,6 +238,7 @@ export default function HomeScreen({
                   hitSlop={8}
                   style={({ pressed }) => [s.companySwitch, pressed && s.pressed]}
                 >
+                  <Icon name="refresh-cw" size={14} color={colors.tealBright} accessible={false} />
                   <Text style={s.companySwitchText}>تبديل</Text>
                 </Pressable>
               ) : null}
@@ -250,6 +252,7 @@ export default function HomeScreen({
           hitSlop={8}
           style={({ pressed }) => [s.logout, pressed && s.pressed]}
         >
+          <Icon name="log-out" size={16} color={colors.textMuted} accessible={false} />
           <Text style={s.logoutText}>خروج</Text>
         </Pressable>
       </View>
@@ -262,7 +265,7 @@ export default function HomeScreen({
         ) : null}
 
         {canPunch ? (
-          <Card>
+          <Card style={s.punchCard}>
             <View style={s.cardHead}>
               <Text style={s.cardLabel}>حالة اليوم</Text>
               <Text style={s.cardDate}>{todayLabel()}</Text>
@@ -280,7 +283,7 @@ export default function HomeScreen({
                 </Pressable>
               </View>
             ) : (
-              <Text style={s.state}>
+              <Text style={[s.state, checkingIn ? s.stateCheckedIn : s.stateCheckedOut]}>
                 {today === null
                   ? '—'
                   : today.last_punch === null
@@ -293,6 +296,7 @@ export default function HomeScreen({
 
             <GradientButton
               label={checkingIn ? 'تسجيل حضور' : 'تسجيل انصراف'}
+              iconName={checkingIn ? 'play' : 'log-out'}
               busy={punching || location.busy}
               disabled={today === null || todayError !== null}
               onPress={punch}
@@ -344,9 +348,9 @@ export default function HomeScreen({
 
         <View style={s.tiles}>
           {session?.capabilities.can_create_penalty ? (
-            <Tile label="تسجيل جزاء" onPress={onOpenPenalty} tone={colors.danger} />
+            <Tile label="تسجيل جزاء" iconName="alert-circle" onPress={onOpenPenalty} tone={colors.danger} />
           ) : null}
-          <Tile label="موظفو الموقع" onPress={onOpenEmployees} tone={colors.teal} />
+          <Tile label="موظفو الموقع" iconName="users" onPress={onOpenEmployees} tone={colors.teal} />
         </View>
       </View>
     </ScrollView>
@@ -355,10 +359,12 @@ export default function HomeScreen({
 
 function Tile({
   label,
+  iconName,
   onPress,
   tone,
 }: {
   label: string
+  iconName?: string
   onPress: () => void
   tone: string
 }) {
@@ -368,6 +374,7 @@ function Tile({
       accessibilityRole="button"
       style={({ pressed }) => [s.tile, pressed && s.tilePressed]}
     >
+      {iconName ? <Icon name={iconName} size={16} color={tone} accessible={false} /> : null}
       <View style={[s.tileDot, { backgroundColor: tone }]} />
       <Text style={s.tileLabel}>{label}</Text>
     </Pressable>
@@ -531,6 +538,14 @@ const s = StyleSheet.create({
   },
   outcome: { marginTop: spacing.md },
   todayError: { gap: spacing.sm, alignItems: 'center', marginTop: spacing.md },
+  punchCard: {
+    ...elevation.medium,
+    backgroundColor: colors.cardRaised,
+    borderWidth: 1,
+    borderColor: colors.borderRaised,
+  },
+  stateCheckedIn: { color: colors.success },
+  stateCheckedOut: { color: colors.teal },
   retry: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,

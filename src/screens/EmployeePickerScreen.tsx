@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
@@ -12,7 +11,8 @@ import { api, messageFor } from '../api/client'
 import type { SiteEmployee } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { ScreenHeader, SolidButton } from '../components/ui'
-import { colors, font, radius, spacing } from '../theme/tokens'
+import { Icon } from '../components/Icon'
+import { colors, elevation, font, radius, spacing } from '../theme/tokens'
 
 interface Props {
   title?: string
@@ -76,8 +76,10 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
       </View>
 
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator color={colors.teal} />
+        <View style={s.list}>
+          {[0, 1, 2].map((i) => (
+            <EmployeeSkeleton key={i} />
+          ))}
         </View>
       ) : error ? (
         <View style={s.center}>
@@ -95,9 +97,12 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
           contentContainerStyle={s.list}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <Text style={s.empty}>
-              {query ? 'لا نتائج مطابقة.' : 'لا يوجد موظفون في هذا الموقع.'}
-            </Text>
+            <View style={s.emptyContainer}>
+              <Icon name="users" size={32} color={colors.textFaint} accessible={false} />
+              <Text style={s.empty}>
+                {query ? 'لا نتائج مطابقة.' : 'لا يوجد موظفون في هذا الموقع.'}
+              </Text>
+            </View>
           }
           renderItem={({ item }) => (
             <Pressable
@@ -126,6 +131,18 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
 function initials(name: string) {
   const parts = name.trim().split(/\s+/)
   return parts.slice(0, 2).map((p) => p[0]).join(' ')
+}
+
+function EmployeeSkeleton() {
+  return (
+    <Pressable style={s.skeletonRow} accessibilityRole="button">
+      <View style={s.skeletonAvatar} />
+      <View style={s.skeletonText}>
+        <View style={s.skeletonLine} />
+        <View style={[s.skeletonLine, { width: '60%' }]} />
+      </View>
+    </Pressable>
+  )
 }
 
 const s = StyleSheet.create({
@@ -200,11 +217,40 @@ const s = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  skeletonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    minHeight: 64,
+    marginBottom: spacing.sm,
+  },
+  skeletonAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.cardRaised,
+  },
+  skeletonText: { flex: 1 },
+  skeletonLine: {
+    height: 14,
+    borderRadius: 4,
+    backgroundColor: colors.cardRaised,
+    marginBottom: 4,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 60,
+    gap: spacing.md,
+  },
   empty: {
     color: colors.textFaint,
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
-    marginTop: 60,
   },
 })

@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -10,7 +9,15 @@ import {
 } from 'react-native'
 import { api, messageFor } from '../api/client'
 import type { ApprovalRequestSummary, RequestType } from '../api/types'
-import { colors, font, radius, requestTypeBadge, spacing } from '../theme/tokens'
+import { colors, elevation, font, radius, requestTypeBadge, spacing } from '../theme/tokens'
+import { Icon } from '../components/Icon'
+
+const REQUEST_TYPE_ICON: Record<RequestType, string> = {
+  leave: 'calendar',
+  loan: 'credit-card',
+  mission: 'paper-plane',
+  penalty: 'alert-triangle',
+}
 
 const FILTERS: { key: RequestType | 'all'; label: string }[] = [
   { key: 'all', label: 'الكل' },
@@ -101,8 +108,10 @@ export default function InboxScreen({ onOpenRequest }: Props) {
       </View>
 
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator color={colors.teal} />
+        <View style={s.list}>
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonRow key={i} />
+          ))}
         </View>
       ) : error ? (
         <View style={s.center}>
@@ -186,12 +195,18 @@ function RequestCard({
       style={({ pressed }) => [s.card, pressed && s.cardPressed]}
     >
       <View style={s.cardBody}>
-        <View style={s.cardTop}>
-          <View style={[s.typeBadge, { backgroundColor: badge.bg }]}>
-            <Text style={[s.typeBadgeText, { color: badge.fg }]}>{badge.label}</Text>
-          </View>
-          <Text style={s.when}>{relativeTime(item.source_created_at)}</Text>
+      <View style={s.cardTop}>
+        <View style={[s.typeBadge, { backgroundColor: badge.bg }]}>
+          <Icon
+            name={REQUEST_TYPE_ICON[item.request_type]}
+            size={10}
+            color={badge.fg}
+            accessible={false}
+          />
+          <Text style={[s.typeBadgeText, { color: badge.fg }]}>{badge.label}</Text>
         </View>
+        <Text style={s.when}>{relativeTime(item.source_created_at)}</Text>
+      </View>
         <Text style={s.name} numberOfLines={1}>
           {item.employee.full_name_ar}
         </Text>
@@ -199,6 +214,19 @@ function RequestCard({
           {item.title} · {item.subtitle}
         </Text>
       </View>
+    </Pressable>
+  )
+}
+
+function SkeletonRow() {
+  return (
+    <Pressable style={s.skeletonCard} accessibilityRole="button">
+      <View style={s.skeletonTop}>
+        <View style={[s.skeletonBadge, { backgroundColor: colors.cardRaised }]} />
+        <View style={s.skeletonPulse} />
+      </View>
+      <View style={s.skeletonName} />
+      <View style={s.skeletonDetail} />
     </Pressable>
   )
 }
@@ -355,6 +383,19 @@ const s = StyleSheet.create({
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
   },
+  skeletonCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: 10,
+  },
+  skeletonTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 6 },
+  skeletonBadge: { width: 60, height: 20, borderRadius: radius.sm },
+  skeletonPulse: { flex: 1, height: 10, borderRadius: 5 },
+  skeletonName: { height: 18, borderRadius: 4, width: '70%' },
+  skeletonDetail: { height: 16, borderRadius: 4, width: '90%', marginTop: 4 },
   empty: {
     color: colors.textFaint,
     fontSize: font.size.base,

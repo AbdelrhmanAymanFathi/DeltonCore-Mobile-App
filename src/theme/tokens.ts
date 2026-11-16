@@ -102,3 +102,37 @@ export const font = {
 
 /** Android minimum touch target. Never size a pressable below this. */
 export const MIN_TOUCH = 48
+
+/** Elevation shadows — page (flat), card (low), raised card (medium). */
+export const elevation = {
+  none: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  low: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  medium: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+} as const
+
+/** Standard icon sizes used by the Icon component. */
+export const iconSize = {
+  xs: 14,
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+} as const

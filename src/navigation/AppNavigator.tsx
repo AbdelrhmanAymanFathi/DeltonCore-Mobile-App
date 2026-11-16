@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, BackHandler, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, BackHandler, LayoutAnimation, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import HomeScreen from '../screens/HomeScreen'
 import InboxScreen from '../screens/InboxScreen'
@@ -9,6 +9,7 @@ import PenaltyFlow from '../screens/PenaltyFlow'
 import { useAuth } from '../auth/AuthContext'
 import { useBadge } from '../hooks/useBadge'
 import { MockIndicator } from '../components/MockIndicator'
+import { Icon } from '../components/Icon'
 import { colors, font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
 
 /**
@@ -68,9 +69,10 @@ export default function AppNavigator() {
   }, [])
 
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     dirtyRef.current = false
     nestedBackRef.current = null
-  }, [pushed])
+  }, [pushed, tab])
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -152,12 +154,14 @@ export default function AppNavigator() {
         <TabButton
           label="الرئيسية"
           active={tab === 'home'}
+          icon={tab === 'home' ? 'home' : 'home-outline'}
           onPress={() => setTab('home')}
         />
         {canApprove ? (
           <TabButton
             label="الطلبات"
             active={tab === 'inbox'}
+            icon={tab === 'inbox' ? 'inbox' : 'inbox-outline'}
             badge={pending}
             onPress={() => setTab('inbox')}
           />
@@ -165,6 +169,7 @@ export default function AppNavigator() {
         <TabButton
           label="الموظفين"
           active={tab === 'employees'}
+          icon={tab === 'employees' ? 'users' : 'users-outline'}
           onPress={() => setTab('employees')}
         />
       </View>
@@ -176,11 +181,13 @@ function TabButton({
   label,
   active,
   badge,
+  icon,
   onPress,
 }: {
   label: string
   active: boolean
   badge?: number | null
+  icon?: string
   onPress: () => void
 }) {
   const showBadge = typeof badge === 'number' && badge > 0
@@ -194,6 +201,14 @@ function TabButton({
     >
       <View style={[s.indicator, active && s.indicatorActive]} />
       <View style={s.tabLabelRow}>
+        {icon ? (
+          <Icon
+            name={icon}
+            size={18}
+            color={active ? colors.teal : colors.textMuted}
+            accessible={false}
+          />
+        ) : null}
         <Text style={active ? s.tabTextActive : s.tabText}>{label}</Text>
         {showBadge ? (
           <View style={s.badge}>

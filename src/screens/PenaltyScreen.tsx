@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,7 +12,8 @@ import {
 import { api, ApiFailure, messageFor, newIdempotencyKey } from '../api/client'
 import type { PenaltyFormContext, PenaltyTypeOption, SiteEmployee } from '../api/types'
 import { Banner, Card, Field, GradientButton, ScreenHeader, SolidButton } from '../components/ui'
-import { colors, font, radius, spacing } from '../theme/tokens'
+import { Icon } from '../components/Icon'
+import { colors, elevation, font, radius, spacing } from '../theme/tokens'
 
 interface Props {
   onBack: () => void
@@ -113,8 +113,11 @@ export default function PenaltyScreen({
     return (
       <View style={s.screen}>
         <ScreenHeader title="تسجيل جزاء" onBack={onBack} />
-        <View style={s.center}>
-          <ActivityIndicator color={colors.teal} />
+        <View style={s.skeletonContainer}>
+          <View style={s.skeletonLine} />
+          <View style={[s.skeletonLine, { width: '40%' }]} />
+          <View style={s.skeletonLine} />
+          <View style={[s.skeletonLine, { width: '60%' }]} />
         </View>
       </View>
     )
@@ -253,6 +256,15 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.lg,
     padding: spacing.xl,
+  },
+  skeletonContainer: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  skeletonLine: {
+    height: 16,
+    borderRadius: 4,
+    backgroundColor: colors.cardRaised,
   },
   centerText: {
     color: colors.textMuted,
