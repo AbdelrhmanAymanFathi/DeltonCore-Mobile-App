@@ -161,6 +161,8 @@ const EMPLOYEES = [
 
 const MOCK_PUNCH_ALWAYS_REJECTS = false
 let punchAttempt = 0
+/** Toggles on every successful mock punch so today alternates check-in / check-out. */
+let mockCheckedIn = false
 /** Set by the `revoked` fixture login: from then on every protected call is refused. */
 let mockDeviceRevoked = false
 
@@ -174,9 +176,14 @@ function json(body: unknown, status = 200): Response {
 /** Deliberate latency so loading states are exercised during development. */
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms))
 
+/** True only while the mock is patched onto global fetch. */
+let mockActive = false
+
 export function installMockApi() {
   if (!__DEV__) return
   if (process.env.EXPO_PUBLIC_USE_MOCK !== '1') return
+
+  mockActive = true
 
   const realFetch = globalThis.fetch
 
@@ -299,9 +306,9 @@ export function installMockApi() {
     if (path.startsWith('/attendance/today/')) {
       return json({
         employee_id: 340,
-        last_punch: null,
-        last_punch_at: null,
-        next_action: 'check_in',
+        last_punch: mockCheckedIn ? 'check_in' : null,
+        last_punch_at: mockCheckedIn ? new Date().toISOString() : null,
+        next_action: mockCheckedIn ? 'check_out' : 'check_in',
       })
     }
 
@@ -323,6 +330,7 @@ export function installMockApi() {
           400,
         )
       }
+      mockCheckedIn = !mockCheckedIn
       return json({
         id: 7781,
         ok: true,
@@ -358,4 +366,8 @@ export function installMockApi() {
 
     return json({ detail: '', code: 'unknown' }, 404)
   }) as typeof fetch
+}
+
+export function isMockActive(): boolean {
+  return mockActive
 }

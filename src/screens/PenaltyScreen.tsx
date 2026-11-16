@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { api, messageFor, newIdempotencyKey } from '../api/client'
+import { api, ApiFailure, messageFor, newIdempotencyKey } from '../api/client'
 import type { PenaltyFormContext, PenaltyTypeOption, SiteEmployee } from '../api/types'
 import { Banner, Card, Field, GradientButton, ScreenHeader, SolidButton } from '../components/ui'
 import { colors, font, radius, spacing } from '../theme/tokens'
@@ -94,9 +94,16 @@ export default function PenaltyScreen({
         idemKey.current,
       )
       onDone()
+      // A definite server answer: rotate so the next tap is a new intent.
+      idemKey.current = newIdempotencyKey()
     } catch (e) {
       setSubmitError(messageFor(e))
-      idemKey.current = newIdempotencyKey()
+      // Keep the same key after a network error or a client-side timeout so a
+      // retry reuses it. Rotate only on a definite server answer (4xx/5xx
+      // with a code).
+      if (e instanceof ApiFailure && e.code !== 'timeout') {
+        idemKey.current = newIdempotencyKey()
+      }
     } finally {
       setSubmitting(false)
     }

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Alert,
+  AppState,
+  type AppStateStatus,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -9,7 +11,7 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { api, messageFor, newIdempotencyKey } from '../api/client'
+import { api, ApiFailure, messageFor, newIdempotencyKey } from '../api/client'
 import type { PunchResponse, TodayStatus } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import {
@@ -49,6 +51,7 @@ export default function HomeScreen({
   const insets = useSafeAreaInsets()
 
   const [today, setToday] = useState<TodayStatus | null>(null)
+  const [todayError, setTodayError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [punching, setPunching] = useState(false)
   const [outcome, setOutcome] = useState<PunchOutcome | null>(null)
@@ -62,21 +65,52 @@ export default function HomeScreen({
   const companyId = session?.company?.id ?? null
   const companyName = session?.company?.name_ar || session?.company?.name || null
   const canSwitch = companies.length > 1
+  /** Tracks the last date we loaded today's status for, to detect a local date change. */
+  const lastDateRef = useRef<string | null>(null)
 
   const load = useCallback(async () => {
     if (!employeeId) return
+    // Detect a local date change: a new day means today's status is stale.
+    const todayKey = new Date().toLocaleDateString('ar-EG')
+    if (lastDateRef.current !== null && lastDateRef.current !== todayKey) {
+      setToday(null)
+      setTodayError(null)
+    }
+    lastDateRef.current = todayKey
+    setTodayError(null)
     try {
       setToday(await api.today(employeeId))
-    } catch {
-      // The punch button stays disabled until this succeeds; pull to retry.
+    } catch (e) {
+      setTodayError(messageFor(e))
     }
-    // `companyId` is not read here — it is a dependency so that a company
-    // switch re-reads today's status instead of showing the old company's.
   }, [employeeId, companyId])
 
   useEffect(() => {
     load()
   }, [load])
+
+  // Re-fetch today's status when the app returns to the foreground, so a
+  // punch made on another device or the desktop is reflected here.
+  useEffect(() => {
+    const onChange = (state: AppStateStatus) => {
+      if (state === 'active') load()
+    }
+    const sub = AppState.addEventListener('change', onChange)
+    return () => sub.remove()
+  }, [load])
+
+  // Poll lightly for a local date change while the app is open, so a new day
+  // refreshes today's status without the user having to pull.
+  useEffect(() => {
+    if (!employeeId) return
+    const timer = setInterval(() => {
+      const todayKey = new Date().toLocaleDateString('ar-EG')
+      if (lastDateRef.current !== null && lastDateRef.current !== todayKey) {
+        load()
+      }
+    }, 30_000)
+    return () => clearInterval(timer)
+  }, [employeeId, load])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -89,14 +123,15 @@ export default function HomeScreen({
     setOutcome(null)
     setPunching(true)
     try {
-      const fix = await location.acquire()
-      if (!fix) {
+      const result = await location.acquire()
+      if (!result.ok) {
         setOutcome({
           kind: 'error',
-          message: messageForLocationFailure(location.failure ?? 'timeout'),
+          message: messageForLocationFailure(result.failure),
         })
         return
       }
+      const fix = result.fix
       const res = await api.punch(
         {
           employee_id: employeeId,
@@ -109,11 +144,17 @@ export default function HomeScreen({
         idemKey.current,
       )
       setOutcome({ kind: 'success', res })
+      // A definite server answer: rotate so the next tap is a new intent.
       idemKey.current = newIdempotencyKey()
       await load()
     } catch (e) {
       setOutcome({ kind: 'error', message: messageFor(e) })
-      idemKey.current = newIdempotencyKey()
+      // Keep the same key after a network error or a client-side timeout so a
+      // retry reuses it and the server recognises the repeat. Rotate only on a
+      // definite server answer (4xx/5xx with a code).
+      if (e instanceof ApiFailure && e.code !== 'timeout') {
+        idemKey.current = newIdempotencyKey()
+      }
     } finally {
       setPunching(false)
     }
@@ -226,20 +267,34 @@ export default function HomeScreen({
               <Text style={s.cardLabel}>حالة اليوم</Text>
               <Text style={s.cardDate}>{todayLabel()}</Text>
             </View>
-            <Text style={s.state}>
-              {today === null
-                ? '—'
-                : today.last_punch === null
-                  ? 'لم تسجّل حضورك بعد'
-                  : checkingIn
-                    ? 'سجّلت الانصراف'
-                    : `سجّلت الحضور ${timeOf(today.last_punch_at)}`}
-            </Text>
+            {todayError ? (
+              <View style={s.todayError}>
+                <Text style={s.state}>{todayError}</Text>
+                <Pressable
+                  onPress={load}
+                  accessibilityRole="button"
+                  accessibilityLabel="إعادة المحاولة"
+                  style={s.retry}
+                >
+                  <Text style={s.retryText}>إعادة المحاولة</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Text style={s.state}>
+                {today === null
+                  ? '—'
+                  : today.last_punch === null
+                    ? 'لم تسجّل حضورك بعد'
+                    : checkingIn
+                      ? 'سجّلت الانصراف'
+                      : `سجّلت الحضور ${timeOf(today.last_punch_at)}`}
+              </Text>
+            )}
 
             <GradientButton
               label={checkingIn ? 'تسجيل حضور' : 'تسجيل انصراف'}
               busy={punching || location.busy}
-              disabled={today === null}
+              disabled={today === null || todayError !== null}
               onPress={punch}
             />
 
@@ -475,6 +530,20 @@ const s = StyleSheet.create({
     lineHeight: 20,
   },
   outcome: { marginTop: spacing.md },
+  todayError: { gap: spacing.sm, alignItems: 'center', marginTop: spacing.md },
+  retry: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.cardRaised,
+    borderWidth: 1,
+    borderColor: colors.borderRaised,
+  },
+  retryText: {
+    color: colors.teal,
+    fontSize: font.size.base,
+    fontFamily: font.familySemiBold,
+  },
   tiles: { flexDirection: 'row', gap: spacing.md },
   tile: {
     flex: 1,

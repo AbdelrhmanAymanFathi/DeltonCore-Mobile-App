@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { ActivityIndicator, I18nManager, StatusBar, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, I18nManager, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as SplashScreen from 'expo-splash-screen'
 import {
@@ -14,7 +14,7 @@ import LoginScreen from './src/screens/LoginScreen'
 import PasswordChangeRequiredScreen from './src/screens/PasswordChangeRequiredScreen'
 import AppNavigator from './src/navigation/AppNavigator'
 import { installMockApi } from './src/api/mock'
-import { colors } from './src/theme/tokens'
+import { colors, font } from './src/theme/tokens'
 
 // RTL must be forced before the first render. On Android this only takes full
 // effect after a restart, which is why it is set here and also declared in
@@ -54,9 +54,19 @@ export default function App() {
 }
 
 function Root() {
-  const { status, session } = useAuth()
+  const { status, session, authError, retryAuth } = useAuth()
 
   if (status === 'loading') {
+    if (authError) {
+      return (
+        <View style={s.splash}>
+          <ActivityIndicator color={colors.teal} />
+          <Pressable style={s.retry} onPress={retryAuth} accessibilityRole="button" accessibilityLabel="إعادة المحاولة">
+            <Text style={s.retryText}>إعادة المحاولة</Text>
+          </Pressable>
+        </View>
+      )
+    }
     return (
       <View style={s.splash}>
         <ActivityIndicator color={colors.teal} />
@@ -80,5 +90,19 @@ const s = StyleSheet.create({
     backgroundColor: colors.page,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  retry: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.cardRaised,
+    borderWidth: 1,
+    borderColor: colors.borderRaised,
+  },
+  retryText: {
+    color: colors.tealBright,
+    fontSize: font.size.base,
+    fontFamily: font.familyMedium,
   },
 })

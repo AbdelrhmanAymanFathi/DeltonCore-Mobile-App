@@ -287,13 +287,16 @@ let refreshInFlight: Promise<boolean> | null = null
 async function tryRefresh(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight
   refreshInFlight = (async () => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
       const refresh = await SecureStore.getItemAsync(REFRESH_KEY)
       if (!refresh) return false
       const res = await fetch(`${API_BASE}/token/refresh/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Client': 'mobile-app' },
         body: JSON.stringify({ refresh }),
+        signal: controller.signal,
       })
       if (!res.ok) return false
       const data = (await res.json()) as { access: string; refresh?: string }
@@ -303,6 +306,7 @@ async function tryRefresh(): Promise<boolean> {
     } catch {
       return false
     } finally {
+      clearTimeout(timer)
       refreshInFlight = null
     }
   })()
@@ -324,7 +328,7 @@ export const api = {
       method: 'POST',
       body: {
         device_id: deviceId,
-        platform: 'android',
+        platform: Platform.OS as 'android',
         ...deviceMetadata(),
         ...(deviceSecret ? { device_secret: deviceSecret } : {}),
         ...body,

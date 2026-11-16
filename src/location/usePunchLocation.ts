@@ -11,7 +11,9 @@ import * as Location from 'expo-location'
  *    reject anything older than MAX_FIX_AGE_MS.
  * 2. A mock location. GPS spoofing apps are one tap away on any Android phone
  *    and are the obvious way to fake attendance. expo-location reports this;
- *    we refuse the punch and let the backend record the attempt.
+ *    we refuse the punch locally and never send `is_mocked: true` to the
+ *    server — a mocked fix is client policy, not something the backend should
+ *    ever have to adjudicate.
  * 3. Hanging forever with no signal. Inside a steel building a high-accuracy
  *    fix may never arrive, so we time out and say so instead of spinning.
  */
@@ -53,14 +55,18 @@ export function messageForLocationFailure(f: LocationFailure): string {
   }
 }
 
+export type LocationResult =
+  | { ok: true; fix: Fix }
+  | { ok: false; failure: LocationFailure }
+
 export function usePunchLocation() {
   const [state, setState] = useState<LocationState>({ busy: false, failure: null })
 
-  const acquire = useCallback(async (): Promise<Fix | null> => {
+  const acquire = useCallback(async (): Promise<LocationResult> => {
     setState({ busy: true, failure: null })
-    const fail = (failure: LocationFailure) => {
+    const fail = (failure: LocationFailure): LocationResult => {
       setState({ busy: false, failure })
-      return null
+      return { ok: false, failure }
     }
 
     try {
@@ -75,7 +81,6 @@ export function usePunchLocation() {
       const position = await withTimeout(
         Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
-          // Never accept a cached fix: 0 forces a fresh one.
           mayShowUserSettingsDialog: true,
         }),
         FIX_TIMEOUT_MS,
@@ -89,13 +94,16 @@ export function usePunchLocation() {
 
       setState({ busy: false, failure: null })
       return {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        // Android can report null accuracy. Treat unknown as bad, not as
-        // perfect — the backend subtracts accuracy from distance, and a 0
-        // here would silently claim a pinpoint fix.
-        accuracy_meters: Math.round(position.coords.accuracy ?? 999),
-        is_mocked: false,
+        ok: true,
+        fix: {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          // Android can report null accuracy. Treat unknown as bad, not as
+          // perfect — the backend subtracts accuracy from distance, and a 0
+          // here would silently claim a pinpoint fix.
+          accuracy_meters: Math.round(position.coords.accuracy ?? 999),
+          is_mocked: false,
+        },
       }
     } catch {
       return fail('timeout')
@@ -108,8 +116,22 @@ export function usePunchLocation() {
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
-  return Promise.race([
-    p,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
-  ])
+  let settled = false
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    settled = true
+    controller.abort()
+  }, ms)
+  return p.then(
+    (value) => {
+      clearTimeout(timer)
+      // A late result after the timeout has already lost the race: ignore it.
+      if (settled) return null
+      return value
+    },
+    (err) => {
+      clearTimeout(timer)
+      throw err
+    },
+  )
 }

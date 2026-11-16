@@ -9,6 +9,7 @@ import React, {
 import { AppState, type AppStateStatus } from 'react-native'
 import {
   api,
+  ApiFailure,
   clearDeviceSecret,
   clearTokens,
   getAccessToken,
@@ -61,6 +62,10 @@ interface AuthValue {
   signOut: () => Promise<void>
   /** Re-reads /me/ so permission changes made on the desktop land here. */
   refreshSession: () => Promise<void>
+  /** Last transient cold-start error, if any. null when the session is valid. */
+  authError: string | null
+  /** Re-runs /me/ after a transient cold-start failure. */
+  retryAuth: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
@@ -69,6 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>('loading')
   const [session, setSession] = useState<SessionPayload | null>(null)
   const [companies, setCompanies] = useState<CompanyCard[]>([])
+  /** Set on a transient cold-start failure (network, 5xx) so the UI can show a retry. */
+  const [authError, setAuthError] = useState<string | null>(null)
 
   const dropSession = useCallback(() => {
     setSession(null)
@@ -96,14 +103,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCompanies(list ?? [])
     setSession(rest)
     setStatus('signedIn')
+    setAuthError(null)
   }, [])
+
+  /** A network error or 5xx at cold start is not an auth failure — keep tokens and offer retry. */
+  const isDefiniteAuthFailure = (err: unknown): boolean => {
+    if (!(err instanceof ApiFailure)) return false
+    if (err.status === 401) return true
+    return (
+      err.code === 'device_revoked' ||
+      err.code === 'device_required' ||
+      err.code === 'account_inactive' ||
+      err.code === 'password_locked'
+    )
+  }
 
   // On cold start we do not trust a stored token: the account may have been
   // locked or stripped of permissions on the desktop since last use. /me/ is
-  // the only thing that proves the session is still good.
+  // the only thing that proves the session is still good. A transient network
+  // or server error keeps the tokens and offers a retry instead of logging out.
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    const run = async () => {
       const token = await getAccessToken()
       if (!token) {
         if (!cancelled) setStatus('signedOut')
@@ -114,13 +135,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return
         setSession(me)
         setStatus('signedIn')
-      } catch {
-        await clearTokens()
-        if (!cancelled) dropSession()
+        setAuthError(null)
+      } catch (err) {
+        if (cancelled) return
+        if (isDefiniteAuthFailure(err)) {
+          await clearTokens()
+          dropSession()
+        } else {
+          // Transient: keep the tokens, surface a retry.
+          setAuthError(err instanceof Error ? err.message : 'تعذّر الاتصال بالخادم. حاول مرة أخرى.')
+          setStatus('loading')
+        }
       }
-    })()
+    }
+    run()
     return () => {
       cancelled = true
+    }
+  }, [dropSession])
+
+  /** Re-runs /me/ after a transient cold-start failure. Clears the error on success. */
+  const retryAuth = useCallback(async () => {
+    setAuthError(null)
+    const token = await getAccessToken()
+    if (!token) {
+      setStatus('signedOut')
+      return
+    }
+    try {
+      const me = await api.me()
+      setSession(me)
+      setStatus('signedIn')
+    } catch (err) {
+      if (isDefiniteAuthFailure(err)) {
+        await clearTokens()
+        dropSession()
+      } else {
+        setAuthError(err instanceof Error ? err.message : 'تعذّر الاتصال بالخادم. حاول مرة أخرى.')
+      }
     }
   }, [dropSession])
 
@@ -188,13 +240,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       status,
       session,
       companies,
+      authError,
       signIn,
       adoptSession,
       switchCompany,
       signOut,
       refreshSession,
+      retryAuth,
     }),
-    [status, session, companies, signIn, adoptSession, switchCompany, signOut, refreshSession],
+    [status, session, companies, authError, signIn, adoptSession, switchCompany, signOut, refreshSession, retryAuth],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

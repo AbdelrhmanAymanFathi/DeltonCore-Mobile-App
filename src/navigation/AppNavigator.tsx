@@ -8,6 +8,7 @@ import EmployeePickerScreen from '../screens/EmployeePickerScreen'
 import PenaltyFlow from '../screens/PenaltyFlow'
 import { useAuth } from '../auth/AuthContext'
 import { useBadge } from '../hooks/useBadge'
+import { MockIndicator } from '../components/MockIndicator'
 import { colors, font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
 
 /**
@@ -124,6 +125,7 @@ export default function AppNavigator() {
 
   return (
     <View style={s.root}>
+      <MockIndicator />
       <View style={s.content}>
         {tab === 'home' ? (
           <HomeScreen

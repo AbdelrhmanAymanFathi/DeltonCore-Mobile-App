@@ -93,11 +93,16 @@ export default function RequestDetailScreen({
         idemKey.current,
       )
       onDecided(requestId)
+      // A definite server answer: rotate so the next tap is a new intent.
+      idemKey.current = newIdempotencyKey()
     } catch (e) {
       setActionError(messageFor(e))
-      // A fresh key for the next genuine attempt: the previous one is now
-      // bound to a request the server may have partly processed.
-      idemKey.current = newIdempotencyKey()
+      // Keep the same key after a network error or a client-side timeout so a
+      // retry reuses it. Rotate only on a definite server answer (4xx/5xx
+      // with a code).
+      if (e instanceof ApiFailure && e.code !== 'timeout') {
+        idemKey.current = newIdempotencyKey()
+      }
       // Someone else decided this request while the screen was open, so the
       // row in the inbox is stale. Say so, then refresh it automatically.
       if (e instanceof ApiFailure && e.code === 'state_conflict') {
