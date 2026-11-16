@@ -72,7 +72,7 @@ export default function HomeScreen({
   const companyName = session?.company?.name_ar || session?.company?.name || null
   const canSwitch = companies.length > 1
   const userName = session?.user?.full_name ?? ''
-  const firstName = userName.split(/[\s\u0600-\u06FF]+/)[0] || 'مستخدم'
+  const firstName = userName.split(/\s+/)[0] || 'مستخدم'
   const userInitial = userName.charAt(0) || 'م'
   const isCheckedIn = today?.last_punch !== null
   /** Tracks the last date we loaded today's status for, to detect a local date change. */
@@ -341,7 +341,9 @@ export default function HomeScreen({
               style={s.popupItem}
             >
               <Icon name="log-out" size={16} color={colors.danger} accessible={false} />
-              <Text style={s.popupItemText}>تسجيل الخروج</Text>
+              <Text style={s.popupItemText} numberOfLines={1}>
+                تسجيل الخروج
+              </Text>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -606,7 +608,7 @@ const s = StyleSheet.create({
     position: 'absolute',
     right: spacing.sm,
     top: 0,
-    width: 240,
+    minWidth: 240,
     backgroundColor: '#131C2B',
     borderWidth: 1,
     borderColor: '#1F2A3D',
@@ -622,18 +624,21 @@ const s = StyleSheet.create({
   popupHeader: {
     padding: spacing.sm,
     gap: spacing.xs,
+    alignSelf: 'stretch',
   },
   popupName: {
     color: colors.text,
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    alignSelf: 'stretch',
   },
   popupRole: {
     color: colors.textMuted,
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
+    alignSelf: 'stretch',
   },
   popupDivider: {
     height: 1,
@@ -643,7 +648,7 @@ const s = StyleSheet.create({
   popupItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: 10,
     padding: spacing.sm,
     borderRadius: radius.sm,
     minHeight: 48,
@@ -653,6 +658,8 @@ const s = StyleSheet.create({
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    alignSelf: 'stretch',
+    flex: 1,
   },
   body: { padding: spacing.lg, gap: spacing.lg },
   cardHead: {
