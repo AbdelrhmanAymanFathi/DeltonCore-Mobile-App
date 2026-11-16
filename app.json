@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "مشرفو دلتون",
+    "slug": "delton-core-supervisor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "scheme": "deltoncore",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A111C"
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#0D1522",
+      "barStyle": "light-content"
+    },
+    "android": {
+      "package": "com.deltoncore.supervisor",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#0A111C"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "يستخدم التطبيق موقعك عند تسجيل الحضور فقط، للتحقق من أنك داخل نطاق موقع العمل."
+        }
+      ],
+      "expo-secure-store",
+      "expo-splash-screen"
+    ],
+    "extra": {
+      "notes": {
+        "rtl": "اتجاه الواجهة من اليمين مفروض في App.tsx عبر I18nManager. على أندرويد لا يأخذ مفعوله كاملًا إلا بعد إعادة تشغيل التطبيق، فالتثبيت الجديد يظهر صحيحًا من أول مرة.",
+        "backgroundLocation": "ACCESS_BACKGROUND_LOCATION محجوب عمدًا: التطبيق لا يحتاج تتبعًا في الخلفية، وطلبه يثير قلق المستخدمين ويستدعي مراجعة إضافية لو نُشر على المتاجر لاحقًا."
+      }
+    }
+  }
+}
