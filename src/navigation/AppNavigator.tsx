@@ -8,9 +8,8 @@ import EmployeePickerScreen from '../screens/EmployeePickerScreen'
 import PenaltyFlow from '../screens/PenaltyFlow'
 import { useAuth } from '../auth/AuthContext'
 import { useBadge } from '../hooks/useBadge'
-import { MockIndicator } from '../components/MockIndicator'
 import { Icon } from '../components/Icon'
-import { colors, font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
+import { colors, font, radius, spacing } from '../theme/tokens'
 
 /**
  * Navigation without react-navigation.
@@ -127,7 +126,6 @@ export default function AppNavigator() {
 
   return (
     <View style={s.root}>
-      <MockIndicator />
       <View style={s.content}>
         {tab === 'home' ? (
           <HomeScreen
@@ -197,24 +195,26 @@ function TabButton({
       accessibilityRole="tab"
       accessibilityState={{ selected: active }}
       accessibilityLabel={showBadge ? `${label}، ${badge} بانتظار قرارك` : label}
+      hitSlop={8}
       style={s.tab}
     >
-      <View style={[s.indicator, active && s.indicatorActive]} />
       <View style={s.tabLabelRow}>
         {icon ? (
-          <Icon
-            name={icon}
-            size={18}
-            color={active ? colors.teal : colors.textMuted}
-            accessible={false}
-          />
-        ) : null}
-        <Text style={active ? s.tabTextActive : s.tabText}>{label}</Text>
-        {showBadge ? (
-          <View style={s.badge}>
-            <Text style={s.badgeText}>{badge > 99 ? '٩٩+' : badge}</Text>
+          <View style={s.tabIconWrap}>
+            <Icon
+              name={icon}
+              size={24}
+              color={active ? colors.teal : '#64748B'}
+              accessible={false}
+            />
+            {showBadge ? (
+              <View style={s.tabBadge}>
+                <Text style={s.tabBadgeText}>{badge > 99 ? '٩٩+' : badge}</Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
+        <Text style={active ? s.tabTextActive : s.tabText}>{label}</Text>
       </View>
     </Pressable>
   )
@@ -228,43 +228,64 @@ const s = StyleSheet.create({
     backgroundColor: colors.header,
     borderTopWidth: 1,
     borderTopColor: colors.borderSoft,
+    minHeight: 64,
+    paddingBottom: 12,
   },
   tab: {
     flex: 1,
-    minHeight: MIN_TOUCH + 12,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 4,
+    position: 'relative',
   },
   indicator: {
     width: 22,
     height: 3,
     borderRadius: 2,
     backgroundColor: 'transparent',
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    transform: [{ translateX: -11 }],
   },
   indicatorActive: { backgroundColor: colors.teal },
+  tabIconWrap: {
+    position: 'relative',
+  },
+  tabBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: colors.danger,
+    borderRadius: radius.pill,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabBadgeText: {
+    color: colors.page,
+    fontSize: 10,
+    fontFamily: font.familyBold,
+    textAlign: 'center',
+  },
+  tabLabelRow: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
   tabText: {
-    color: colors.textFaint,
+    color: '#64748B',
     fontSize: font.size.sm,
     fontFamily: font.familyMedium,
+    textAlign: 'center',
   },
   tabTextActive: {
     color: colors.teal,
     fontSize: font.size.sm,
     fontFamily: font.familySemiBold,
-  },
-  tabLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  badge: {
-    minWidth: 18,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: colors.page,
-    fontSize: 10,
-    fontFamily: font.familyBold,
+    textAlign: 'center',
   },
 })

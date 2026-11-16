@@ -4,7 +4,6 @@ import {
   Animated,
   AppState,
   type AppStateStatus,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,6 +22,7 @@ import {
 } from '../location/usePunchLocation'
 import { Banner, Card, GradientButton } from '../components/ui'
 import { Icon } from '../components/Icon'
+import { MockIndicator } from '../components/MockIndicator'
 import CompanyPickerScreen from './CompanyPickerScreen'
 import { colors, elevation, font, iconSize, MIN_TOUCH, radius, spacing } from '../theme/tokens'
 
@@ -250,7 +250,39 @@ export default function HomeScreen({
         />
       }
     >
+      {/* Mock toast — handled by MockIndicator component */}
+      <MockIndicator />
+
       <View style={[s.header, { paddingTop: insets.top + spacing.xs }]}>
+        {/* Notifications — RTL end (left side) */}
+        <Pressable
+          onPress={onOpenInbox}
+          accessibilityRole="button"
+          accessibilityLabel="الإشعارات"
+          hitSlop={12}
+          style={s.notifPressable}
+        >
+          <View style={s.notifWrap}>
+            <Icon name="bell" size={20} color={colors.textMuted} accessible={false} />
+            {typeof pendingCount === 'number' && pendingCount > 0 ? (
+              <View style={s.badgeWrap}>
+                <Text style={s.badgeText}>{pendingCount > 99 ? '٩٩+' : pendingCount}</Text>
+              </View>
+            ) : null}
+          </View>
+        </Pressable>
+
+        {/* Text column */}
+        <View style={s.headerText}>
+          <Text style={s.greeting}>أهلاً، {firstName}</Text>
+          <View style={s.siteRow}>
+            <Icon name="factory" family="material-community" size={16} color={colors.teal} accessible={false} />
+            <Text style={s.siteName} numberOfLines={1}>
+              {session?.site?.name_ar || companyName || ''}
+            </Text>
+          </View>
+        </View>
+
         {/* Avatar — RTL start (right side) */}
         <Pressable
           onPress={toggleAccountMenu}
@@ -269,35 +301,6 @@ export default function HomeScreen({
               <Text style={s.avatarText}>{userInitial}</Text>
             </LinearGradient>
             <View style={[s.statusDot, isCheckedIn ? s.statusOnline : s.statusOffline]} />
-          </View>
-        </Pressable>
-
-        {/* Text column */}
-        <View style={s.headerText}>
-          <Text style={s.greeting}>أهلاً، {firstName}</Text>
-          <View style={s.siteRow}>
-            <Icon name="building" size={16} color={colors.teal} accessible={false} />
-            <Text style={s.siteName} numberOfLines={1}>
-              {session?.site?.name_ar || companyName || ''}
-            </Text>
-          </View>
-        </View>
-
-        {/* Notifications — RTL end (left side) */}
-        <Pressable
-          onPress={onOpenInbox}
-          accessibilityRole="button"
-          accessibilityLabel="الإشعارات"
-          hitSlop={12}
-          style={s.notifPressable}
-        >
-          <View style={s.notifWrap}>
-            <Icon name="bell" size={iconSize.md} color={colors.textMuted} accessible={false} />
-            {typeof pendingCount === 'number' && pendingCount > 0 ? (
-              <View style={s.badgeWrap}>
-                <Text style={s.badgeText}>{pendingCount > 99 ? '٩٩+' : pendingCount}</Text>
-              </View>
-            ) : null}
           </View>
         </Pressable>
       </View>
@@ -497,6 +500,7 @@ const s = StyleSheet.create({
     gap: spacing.md,
     position: 'relative',
     minHeight: 72,
+    overflow: 'visible',
   },
   headerText: { flex: 1 },
   pressed: { opacity: 0.7 },
@@ -517,18 +521,18 @@ const s = StyleSheet.create({
     fontFamily: font.familySemiBold,
     textAlign: 'right',
   },
-  // Avatar
   avatarPressable: {
     minHeight: 44,
     minWidth: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'visible',
   },
   avatarWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    overflow: 'hidden',
+    overflow: 'visible',
     position: 'relative',
   },
   avatarGradient: {
@@ -545,12 +549,12 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 11,
+    height: 11,
+    borderRadius: 5.5,
     position: 'absolute',
-    bottom: 2,
-    right: 2,
+    bottom: 0,
+    left: 0,
     borderWidth: 2,
     borderColor: colors.page,
   },
@@ -558,18 +562,19 @@ const s = StyleSheet.create({
     backgroundColor: colors.success,
   },
   statusOffline: {
-    backgroundColor: colors.textFaint,
+    backgroundColor: '#94A3B8',
   },
   // Notifications
   notifPressable: {
-    minHeight: 40,
-    minWidth: 40,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#131C2B',
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: 20,
+    overflow: 'visible',
   },
   notifWrap: {
     position: 'relative',
@@ -578,17 +583,16 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: colors.danger,
-    borderRadius: radius.pill,
+    backgroundColor: '#EF4444',
+    borderRadius: 9,
     minWidth: 18,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeText: {
     color: colors.page,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: font.familyBold,
     textAlign: 'center',
   },

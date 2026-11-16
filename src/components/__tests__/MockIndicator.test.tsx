@@ -38,13 +38,15 @@ describe('MOCK indicator', () => {
   })
 
   it('renders null when mock is not active', async () => {
+    delete process.env.EXPO_PUBLIC_USE_MOCK
     const result = await render(<MockIndicator />)
     expect(result.toJSON()).toBeNull()
   })
 
   it('renders a banner when mock is active', async () => {
-    ;(isMockActive as jest.Mock).mockReturnValue(true)
+    process.env.EXPO_PUBLIC_USE_MOCK = '1'
     const result = await render(<MockIndicator />)
     expect(result.toJSON()).not.toBeNull()
+    delete process.env.EXPO_PUBLIC_USE_MOCK
   })
 })
