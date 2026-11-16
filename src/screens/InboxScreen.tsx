@@ -15,7 +15,7 @@ import { Icon } from '../components/Icon'
 const REQUEST_TYPE_ICON: Record<RequestType, string> = {
   leave: 'calendar',
   loan: 'credit-card',
-  mission: 'paper-plane',
+  mission: 'send',
   penalty: 'alert-triangle',
 }
 

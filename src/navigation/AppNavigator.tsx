@@ -154,14 +154,14 @@ export default function AppNavigator() {
         <TabButton
           label="الرئيسية"
           active={tab === 'home'}
-          icon={tab === 'home' ? 'home' : 'home-outline'}
+          icon="home"
           onPress={() => setTab('home')}
         />
         {canApprove ? (
           <TabButton
             label="الطلبات"
             active={tab === 'inbox'}
-            icon={tab === 'inbox' ? 'inbox' : 'inbox-outline'}
+            icon="inbox"
             badge={pending}
             onPress={() => setTab('inbox')}
           />
@@ -169,7 +169,7 @@ export default function AppNavigator() {
         <TabButton
           label="الموظفين"
           active={tab === 'employees'}
-          icon={tab === 'employees' ? 'users' : 'users-outline'}
+          icon="users"
           onPress={() => setTab('employees')}
         />
       </View>
