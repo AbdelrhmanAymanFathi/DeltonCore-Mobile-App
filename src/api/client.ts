@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 
 import appConfig from '../../app.json'
+import { t, tCount, formatDistance, SECOND_FORMS } from '../i18n'
 import type {
   ApiError,
   BadgeCounts,
@@ -41,7 +42,7 @@ export class ApiFailure extends Error {
   payload: ApiError
 
   constructor(status: number, payload: ApiError) {
-    super(payload.detail || 'حدث خطأ غير متوقع')
+    super(payload.detail || t('errors.unexpected'))
     this.name = 'ApiFailure'
     this.status = status
     this.code = payload.code ?? 'unknown'
@@ -434,81 +435,85 @@ export const api = {
  */
 export function messageFor(err: unknown): string {
   if (!(err instanceof ApiFailure)) {
-    return 'تعذّر الاتصال بالخادم. تأكد من الشبكة وحاول مرة أخرى.'
+    return t('errors.noInternet')
   }
   const p = err.payload
   switch (err.code) {
     case 'invalid_credentials':
-      return 'اسم المستخدم أو كلمة المرور غير صحيحة.'
+      return t('errors.invalidCredentials')
     case 'password_locked':
-      return 'الحساب مقفول لانتهاء صلاحية كلمة المرور. راجع الموارد البشرية.'
-    case 'too_many_attempts':
-      return `محاولات كثيرة. حاول بعد ${(p.retry_after_seconds ?? 60).toLocaleString('ar-EG-u-nu-latn')} ثانية.`
+      return t('errors.accountLocked')
+    case 'too_many_attempts': {
+      const seconds = (p.retry_after_seconds ?? 60) as number
+      return t('errors.tooManyAttempts', { seconds: tCount(seconds, SECOND_FORMS) })
+    }
     case 'account_inactive':
-      return 'الحساب غير نشط. راجع الموارد البشرية.'
+      return t('errors.accountInactive')
     case 'no_employee_profile':
-      return 'حسابك غير مرتبط بسجل موظف، فلا يمكن استخدام التطبيق.'
+      return t('errors.noEmployeeProfile')
     case 'no_mobile_access':
-      return 'حسابك لا يملك صلاحية اعتماد أو تسجيل حضور.'
+      return t('errors.noMobileAccess')
     case 'two_factor_required':
-      return 'أدخل رمز التحقق بخطوتين لإكمال الدخول.'
+      return t('errors.twoFactorRequired')
     case 'two_factor_invalid':
-      return 'رمز التحقق غير صحيح. تأكد من الرمز الظاهر في التطبيق وحاول مرة أخرى.'
+      return t('errors.twoFactorInvalid')
     case 'two_factor_enrollment_required':
-      return 'التحقق بخطوتين إلزامي لحسابك. فعّله من النسخة الويب أولًا.'
+      return t('errors.twoFactorEnrollmentRequired')
     case 'token_invalid':
     case 'missing_refresh_token':
     case 'invalid_refresh_token':
-      return 'انتهت صلاحية الجلسة. سجّل الدخول من جديد.'
-    case 'device_id_required':
-      return 'تعذّر التعرّف على هذا الجهاز. أعد تشغيل التطبيق وحاول مرة أخرى.'
-    case 'device_required':
-      return 'هذه الجلسة غير مرتبطة بجهاز. سجّل الدخول من جديد.'
-    case 'device_revoked':
-      return 'تم إيقاف هذا الجهاز من الإدارة. راجع الموارد البشرية.'
-    case 'no_company_access':
-      return 'حسابك غير مرتبط بأي شركة، فلا يمكن استخدام التطبيق.'
-    case 'COMPANY_REQUIRED':
-      return 'اختر الشركة التي تريد الدخول إليها.'
-    case 'COMPANY_FORBIDDEN':
-      return 'لا تملك صلاحية الدخول إلى هذه الشركة.'
-    case 'COMPANY_ARCHIVED':
-      return 'هذه الشركة مؤرشفة ولا يمكن الدخول إليها.'
-    case 'COMPANY_UNAVAILABLE':
-      return 'الشركة غير متاحة الآن. حاول بعد قليل.'
     case 'unauthorized':
-      return 'انتهت صلاحية الجلسة. سجّل الدخول من جديد.'
+      return t('errors.sessionExpired')
+    case 'device_id_required':
+      return t('errors.deviceNotRecognized')
+    case 'device_required':
+      return t('errors.deviceNotLinked')
+    case 'device_revoked':
+      return t('errors.deviceRevoked')
+    case 'no_company_access':
+      return t('errors.noCompanyAccess')
+    case 'COMPANY_REQUIRED':
+      return t('errors.companyRequired')
+    case 'COMPANY_FORBIDDEN':
+      return t('errors.companyForbidden')
+    case 'COMPANY_ARCHIVED':
+      return t('errors.companyArchived')
+    case 'COMPANY_UNAVAILABLE':
+      return t('errors.companyUnavailable')
     case 'invalid_reason':
-      return 'سبب الرفض مطلوب.'
+      return t('errors.invalidReason')
     case 'no_permission':
-      return 'لم تعد مخوَّلًا بالبتّ في هذا الطلب. حدّث القائمة.'
+      return t('errors.noPermission')
     case 'state_conflict':
-      return 'تم البتّ في هذا الطلب من مكان آخر. سنحدّث القائمة الآن.'
+      return t('errors.stateConflict')
     case 'out_of_range':
-      return `أنت على بعد ${p.gps_distance_meters?.toLocaleString('ar-EG-u-nu-latn') ?? 'غير محدد'} مترًا من ${p.site_name ?? 'الموقع'}. المسموح ${p.allowed_radius_meters?.toLocaleString('ar-EG-u-nu-latn') ?? 'غير محدد'} مترًا.`
+      return t('home.outOfRange', {
+        distance: formatDistance(p.gps_distance_meters ?? null),
+        allowed: formatDistance(p.allowed_radius_meters ?? null),
+      })
     case 'gps_inaccurate':
-      return 'إشارة الموقع ضعيفة. اخرج إلى مكان مكشوف وحاول مرة أخرى.'
+      return t('errors.gpsInaccurate')
     case 'gps_unavailable':
-      return 'لم نتمكن من تحديد موقعك. فعّل خدمة الموقع وحاول مرة أخرى.'
+      return t('errors.locationNotAllowed')
     case 'period_closed':
-      return 'الفترة المحاسبية لهذا التاريخ مغلقة.'
+      return t('errors.periodClosed')
     case 'duplicate_punch':
-      return 'سُجّلت بصمة مطابقة قبل قليل. انتظر دقائق قبل إعادة المحاولة.'
+      return t('errors.duplicatePunch')
     case 'already_checked_in':
-      return 'مسجَّل حضور بالفعل. سجّل الانصراف أولًا.'
+      return t('errors.alreadyCheckedIn')
     case 'not_checked_in':
-      return 'لا يوجد حضور مسجَّل. سجّل الحضور أولًا.'
+      return t('errors.notCheckedIn')
     case 'attendance_method_not_allowed':
-      return 'طريقة الحضور المسموحة لهذا الموظف لا تشمل التطبيق.'
+      return t('errors.attendanceMethodNotAllowed')
     case 'location_mocked':
-      return 'تم رصد تزييف للموقع. سُجّلت المحاولة ولم يُسجَّل الحضور.'
+      return t('errors.locationMocked')
     case 'no_open_period':
-      return 'لا توجد فترة محاسبية مفتوحة، فلا يمكن تسجيل جزاء الآن.'
+      return t('errors.noOpenPeriod')
     case 'idempotency_key_reuse':
-      return 'تعارض في إعادة الإرسال. أعد فتح الشاشة وحاول مجددًا.'
+      return t('errors.idempotencyReuse')
     case 'timeout':
-      return 'استغرق الاتصال وقتًا أطول من اللازم. تحقّق من الشبكة وحاول مرة أخرى.'
+      return t('errors.timeout')
     default:
-      return 'حدث خطأ غير متوقع. حاول مرة أخرى.'
+      return t('errors.unexpected')
   }
 }

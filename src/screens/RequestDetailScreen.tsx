@@ -22,7 +22,8 @@ import {
 } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, radius, spacing } from '../theme/tokens'
+import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t } from '../i18n'
 
 interface Props {
   requestId: string
@@ -116,7 +117,7 @@ export default function RequestDetailScreen({
   if (loading) {
     return (
       <View style={[s.screen, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="تفاصيل الطلب" onBack={onBack} />
+        <ScreenHeader title={t("common.details")} onBack={onBack} />
         <View style={s.skeletonContainer}>
           <View style={[s.skeletonLine, { backgroundColor: colors.surfaceElevated }]} />
           <View style={[s.skeletonLine, { width: '40%', backgroundColor: colors.surfaceElevated }]} />
@@ -130,10 +131,10 @@ export default function RequestDetailScreen({
   if (error || !data) {
     return (
       <View style={[s.screen, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="تفاصيل الطلب" onBack={onBack} />
+        <ScreenHeader title={t("common.details")} onBack={onBack} />
         <View style={s.center}>
           <Text style={[s.centerText, { color: colors.textMuted }]}>{error}</Text>
-          <SolidButton label="إعادة المحاولة" tone="neutral" onPress={load} />
+          <SolidButton label={t("common.retry")} tone="neutral" onPress={load} />
         </View>
       </View>
     )
@@ -149,7 +150,7 @@ export default function RequestDetailScreen({
       keyboardVerticalOffset={insets.top}
     >
       <ScreenHeader
-        title="تفاصيل الطلب"
+        title={t("common.details")}
         onBack={onBack}
         right={<StatusPill status={data.status} colors={colors} />}
       />
@@ -178,7 +179,7 @@ export default function RequestDetailScreen({
 
         {data.actions.length > 0 ? (
           <Card>
-            <Text style={[s.sectionLabel, { color: colors.textMuted }]}>سجل الاعتماد</Text>
+            <Text style={[s.sectionLabel, { color: colors.textMuted }]}>{t("common.approvalLog")}</Text>
             {data.actions.map((a) => (
               <View key={a.id} style={s.timelineRow}>
                 <View
@@ -192,8 +193,8 @@ export default function RequestDetailScreen({
                 />
                 <View style={s.timelineText}>
                   <Text style={[s.timelineTitle, { color: colors.textPrimary }]}>
-                    {a.decision === 'approved' ? 'اعتمده' : 'رفضه'} {a.actor_name}
-                    {a.client_source === 'app' ? ' — من التطبيق' : ''}
+                    {a.decision === 'approved' ? t("common.approvedBy") : t("common.rejectedBy")} {a.actor_name}
+                    {a.client_source === 'app' ? t("common.fromApp") : ''}
                   </Text>
                   {a.reason ? <Text style={[s.timelineReason, { color: colors.textMuted }]}>{a.reason}</Text> : null}
                 </View>
@@ -206,7 +207,7 @@ export default function RequestDetailScreen({
 
         {mode === 'rejecting' ? (
           <Card>
-            <Text style={[s.sectionLabel, { color: colors.textMuted }]}>سبب الرفض</Text>
+            <Text style={[s.sectionLabel, { color: colors.textMuted }]}>{t("common.rejectReason")}</Text>
             <TextInput
               style={[s.reasonInput, { backgroundColor: colors.inputBg, color: colors.inputText }]}
               value={reason}
@@ -214,10 +215,10 @@ export default function RequestDetailScreen({
               multiline
               numberOfLines={3}
               autoFocus
-              placeholder="اكتب السبب — يظهر لمقدّم الطلب"
+              placeholder={t("common.rejectReasonPlaceholder")}
               placeholderTextColor={colors.inputPlaceholder}
             />
-            <Text style={[s.reasonHint, { color: colors.textMuted }]}>السبب إلزامي عند الرفض.</Text>
+            <Text style={[s.reasonHint, { color: colors.textMuted }]}>{t("common.rejectReasonRequired")}</Text>
           </Card>
         ) : null}
 
@@ -229,13 +230,13 @@ export default function RequestDetailScreen({
           {mode === 'idle' ? (
             <>
               <SolidButton
-                label="رفض"
+                label={t("common.reject")}
                 tone="reject"
                 style={s.flex1}
                 onPress={() => setMode('rejecting')}
               />
               <SolidButton
-                label="موافقة"
+                label={t("common.approve")}
                 tone="approve"
                 style={s.flex2}
                 iconName="check-circle"
@@ -247,7 +248,7 @@ export default function RequestDetailScreen({
           ) : (
             <>
               <SolidButton
-                label="إلغاء"
+                label={t("common.cancel")}
                 tone="neutral"
                 style={s.flex1}
                 onPress={() => {
@@ -257,7 +258,7 @@ export default function RequestDetailScreen({
                 }}
               />
               <SolidButton
-                label="تأكيد الرفض"
+                label={t("common.confirmReject")}
                 tone="reject"
                 style={s.flex2}
                 iconName="x-circle"
@@ -275,10 +276,10 @@ export default function RequestDetailScreen({
 
 function StatusPill({ status, colors }: { status: ApprovalRequestDetail['status']; colors: any }) {
   const map = {
-    pending: { bg: colors.tintCrimson, fg: colors.crimson, label: 'منتظر قرارك' },
-    approved: { bg: colors.tintSuccess, fg: colors.success, label: 'معتمَد' },
-    rejected: { bg: colors.tintCrimson, fg: colors.crimson, label: 'مرفوض' },
-    cancelled: { bg: colors.surfaceElevated, fg: colors.textMuted, label: 'ملغي' },
+    pending: { bg: colors.tintCrimson, fg: colors.crimson, label: t("requests.pendingTab") },
+    approved: { bg: colors.tintSuccess, fg: colors.success, label: t("requests.approved") },
+    rejected: { bg: colors.tintCrimson, fg: colors.crimson, label: t("requests.rejected") },
+    cancelled: { bg: colors.surfaceElevated, fg: colors.textMuted, label: t("requests.cancelled") },
   }[status]
   return (
     <View style={[s.pill, { backgroundColor: map.bg }]}>
@@ -314,7 +315,8 @@ const s = StyleSheet.create({
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
   employeeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatar: {
@@ -327,24 +329,32 @@ const s = StyleSheet.create({
   avatarText: {
     fontSize: font.size.xl,
     fontFamily: font.familySemiBold,
+    lineHeight: lineHeightFor(font.size.xl),
+    ...baseText,
   },
   employeeText: { flex: 1 },
   employeeName: {
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.lg),
+    ...baseText,
   },
   employeeMeta: {
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
     marginTop: 3,
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   sectionLabel: {
     fontSize: font.size.sm,
     fontFamily: font.familyMedium,
     textAlign: 'right',
     marginBottom: spacing.md,
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   timelineRow: { flexDirection: 'row', gap: 10, marginBottom: spacing.md },
   dot: { width: 9, height: 9, borderRadius: 5, marginTop: 6 },
@@ -353,13 +363,16 @@ const s = StyleSheet.create({
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
   },
   timelineReason: {
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
     marginTop: 3,
-    lineHeight: 20,
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   reasonInput: {
     minHeight: 92,
@@ -369,12 +382,16 @@ const s = StyleSheet.create({
     fontFamily: font.family,
     textAlign: 'right',
     textAlignVertical: 'top',
+    lineHeight: lineHeightFor(font.size.lg),
+    ...baseText,
   },
   reasonHint: {
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
     marginTop: spacing.sm,
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   actions: {
     flexDirection: 'row',
@@ -386,5 +403,5 @@ const s = StyleSheet.create({
   flex1: { flex: 1 },
   flex2: { flex: 2 },
   pill: { paddingHorizontal: 11, paddingVertical: 4, borderRadius: radius.pill },
-  pillText: { fontSize: font.size.sm, fontFamily: font.familySemiBold },
+  pillText: { fontSize: font.size.sm, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.sm), ...baseText },
 })

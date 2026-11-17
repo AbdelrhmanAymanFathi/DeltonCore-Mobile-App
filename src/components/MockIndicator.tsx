@@ -3,7 +3,8 @@ import { AccessibilityInfo, Animated, StatusBar, StyleSheet, Text, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon } from './Icon'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, radius, spacing } from '../theme/tokens'
+import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t } from '../i18n'
 
 export function MockIndicator() {
   const { colors } = useTheme()
@@ -59,7 +60,7 @@ export function MockIndicator() {
     >
       <View style={[s.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Icon name="info" size={14} color={colors.warning} accessible={false} />
-        <Text style={{ ...s.text, color: colors.textPrimary }}>وضع تجريبي · بيانات وهمية</Text>
+        <Text style={{ ...s.text, color: colors.textPrimary }}>{t("common.mockIndicator")}</Text>
       </View>
     </Animated.View>
   )
@@ -84,5 +85,7 @@ const s = StyleSheet.create({
     fontSize: font.size.sm,
     fontFamily: font.familyMedium,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
 })

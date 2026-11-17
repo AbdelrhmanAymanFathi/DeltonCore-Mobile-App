@@ -19,6 +19,7 @@ import { StatusBarCover } from './src/components/StatusBarCover'
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider'
 import { font } from './src/theme/tokens'
 import { PressableScale } from './src/components/ui/PressableScale'
+import { t } from './src/i18n'
 
 // RTL must be forced before the first render. On Android this only takes full
 // effect after a restart, which is why it is set here and also declared in
@@ -70,8 +71,8 @@ function Root() {
     if (authError) {
       screen = (
         <View style={s.splash}>
-          <PressableScale style={s.retry} onPress={retryAuth} accessibilityRole="button" accessibilityLabel="إعادة المحاولة">
-            <Text style={s.retryText}>إعادة المحاولة</Text>
+          <PressableScale style={s.retry} onPress={retryAuth} accessibilityRole="button" accessibilityLabel={t("common.retry")}>
+            <Text style={s.retryText}>{t("common.retry")}</Text>
           </PressableScale>
         </View>
       )

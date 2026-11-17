@@ -33,7 +33,11 @@ import {
   MIN_TOUCH,
   radius,
   spacing,
+  lineHeightFor,
+  baseText,
 } from '../theme/tokens'
+import { t, tCount, formatDateShort, formatTime12, formatNumber, formatDistance } from '../i18n'
+import { DAY_FORMS, REQUEST_FORMS } from '../i18n/plural'
 
 const PASSWORD_WARN_DAYS = 7
 
@@ -100,9 +104,10 @@ export default function HomeScreen({
   const companyId = session?.company?.id ?? null
   const companyName = session?.company?.name_ar || session?.company?.name || null
   const canSwitch = companies.length > 1
-  const userName = session?.user?.full_name ?? ''
-  const firstName = userName.split(/\s+/)[0] || 'مستخدم'
-  const userInitial = userName.charAt(0) || 'م'
+  const rawName = session?.user?.full_name
+  const userName = typeof rawName === 'string' ? rawName : ''
+  const firstName = userName.split(/\s+/)[0] || t('common.defaultName')
+  const userInitial = userName.charAt(0) || t('common.userInitial')
   const isCheckedIn = today?.last_punch === 'check_in' && today.next_action === 'check_out'
   const hasRegisteredToday = today !== null && today.last_punch !== null
   const lastDateRef = useRef<string | null>(null)
@@ -333,10 +338,14 @@ export default function HomeScreen({
 
   const handleLogoutPress = () => {
     closeAccountMenu()
-    Alert.alert('تسجيل الخروج', 'هل تريد تسجيل الخروج؟', [
-      { text: 'إلغاء', style: 'cancel' },
-      { text: 'تسجيل الخروج', style: 'destructive', onPress: () => void signOut() },
-    ])
+    Alert.alert(
+      t("common.logoutConfirmTitle"),
+      t("common.logoutConfirmBody"),
+      [
+        { text: t("common.cancel"), style: 'cancel' },
+        { text: t("common.logout"), style: 'destructive', onPress: () => void signOut() },
+      ],
+    )
   }
 
   const setAppearance = (next: 'system' | 'light' | 'dark') => {
@@ -399,7 +408,7 @@ export default function HomeScreen({
         <Pressable
           onPress={onOpenInbox}
           accessibilityRole="button"
-          accessibilityLabel="الإشعارات"
+          accessibilityLabel={t("home.notifications")}
           hitSlop={12}
           style={[s.notifPressable, { backgroundColor: colors.surface, borderColor: colors.border }]}
         >
@@ -407,7 +416,7 @@ export default function HomeScreen({
             <Icon name="bell" size={20} color={colors.textPrimary} accessible={false} />
             {typeof pendingCount === 'number' && pendingCount > 0 ? (
               <View style={[s.badgeWrap, { backgroundColor: colors.badgeCrimson, borderColor: colors.background }]}>
-                <Text style={[s.badgeText, { color: colors.onCrimson }]}>{pendingCount > 99 ? '99+' : pendingCount.toLocaleString('ar-EG-u-nu-latn')}</Text>
+                <Text style={[s.badgeText, { color: colors.onCrimson }]}>{pendingCount > 99 ? '99+' : formatNumber(pendingCount)}</Text>
               </View>
             ) : null}
           </View>
@@ -415,7 +424,9 @@ export default function HomeScreen({
         </View>
 
         <View style={s.headerText}>
-          <Text style={[s.greeting, { color: colors.textSecondary }]}>أهلاً، {firstName}</Text>
+          <Text style={[s.greeting, { color: colors.textSecondary }]}>
+            {clock.getHours() < 12 ? t("home.greetingMorning", { name: firstName }) : t("home.greetingEvening", { name: firstName })}
+          </Text>
           <View style={s.siteRow}>
             <Icon name="factory" family="material-community" size={16} color={colors.brand} accessible={false} />
             <Text style={[s.siteName, { color: colors.textPrimary }]} numberOfLines={1}>
@@ -427,7 +438,7 @@ export default function HomeScreen({
         <Pressable
           onPress={toggleAccountMenu}
           accessibilityRole="button"
-          accessibilityLabel="قائمة الحساب"
+          accessibilityLabel={t("home.accountMenu")}
           hitSlop={12}
           style={s.avatarPressable}
         >
@@ -446,11 +457,11 @@ export default function HomeScreen({
       </View>
 
       <View style={s.body}>
-        {passwordWarn ? (
-          <Banner tone="warn">
-            {`تنتهي صلاحية كلمة مرورك خلال ${daysLeft?.toLocaleString('ar-EG-u-nu-latn')} يومًا. غيّرها من النسخة الويب قبل أن يُقفل الحساب.`}
-          </Banner>
-        ) : null}
+          {passwordWarn ? (
+            <Banner tone="warn">
+              {t("home.passwordExpires", { days: tCount(daysLeft ?? 0, DAY_FORMS) })}
+            </Banner>
+          ) : null}
 
         {canPunch ? (
           <Animated.View style={entryStyle(entryAnimations[0])}>
@@ -461,12 +472,12 @@ export default function HomeScreen({
                 <View style={[s.todayStatus, { backgroundColor: hasRegisteredToday ? colors.tintSuccess : colors.tintBrand }]}>
                   <Text style={{ color: hasRegisteredToday ? colors.success : colors.brandText, fontFamily: font.familySemiBold, fontSize: font.size.xs }}>
                     {today === null
-                      ? 'جارٍ التحميل'
+                      ? t("home.loading")
                       : hasRegisteredToday && today.last_punch === 'check_in'
-                        ? 'تم تسجيل الحضور'
+                        ? t("home.checkedIn")
                         : today?.last_punch === 'check_out'
-                          ? 'سجّلت الانصراف'
-                          : 'لم تسجّل حضورك بعد'}
+                          ? t("home.checkedOut")
+                          : t("home.notCheckedIn")}
                   </Text>
                 </View>
               </View>
@@ -482,10 +493,10 @@ export default function HomeScreen({
                 <Pressable
                   onPress={load}
                   accessibilityRole="button"
-                  accessibilityLabel="إعادة المحاولة"
+                  accessibilityLabel={t("home.retry")}
                   style={[s.retry, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
                 >
-                  <Text style={[s.retryText, { color: colors.brandText }]}>إعادة المحاولة</Text>
+                  <Text style={[s.retryText, { color: colors.brandText }]}>{t("home.retry")}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -517,7 +528,7 @@ export default function HomeScreen({
                   onPress={punch}
                   disabled={today === null || todayError !== null || punching || location.busy}
                   accessibilityRole="button"
-                  accessibilityLabel={checkingIn ? 'تسجيل الحضور' : 'تسجيل الانصراف'}
+                  accessibilityLabel={checkingIn ? t("home.punchIn") : t("home.punchOut")}
                   accessibilityState={{ disabled: today === null || todayError !== null, busy: punching || location.busy }}
                   style={[s.punchCircle, { borderColor: isCheckedIn ? colors.success : colors.brand }]}
                 >
@@ -540,7 +551,7 @@ export default function HomeScreen({
                   </LinearGradient>
                 </Pressable>
                 <Text style={[s.punchLabel, { color: colors.textPrimary }]}>
-                  {punching || location.busy ? 'جارٍ التسجيل…' : checkingIn ? 'تسجيل الحضور' : 'تسجيل الانصراف'}
+                  {punching || location.busy ? t("home.punching") : checkingIn ? t("home.punchIn") : t("home.punchOut")}
                 </Text>
               </View>
             )}
@@ -550,29 +561,32 @@ export default function HomeScreen({
                 <View style={[s.locationDot, { backgroundColor: colors.crimson }]} />
                 <Text style={[s.locationText, { color: colors.crimson }]} numberOfLines={2}>
                   {outcome.geofence
-                    ? `خارج النطاق${outcome.geofence.distance !== null ? ` · ${outcome.geofence.distance.toLocaleString('ar-EG-u-nu-latn')} م` : ''}${outcome.geofence.allowed !== null ? ` (المسموح ${outcome.geofence.allowed.toLocaleString('ar-EG-u-nu-latn')} م)` : ''}`
-                    : 'تعذّر التحقق من موقعك'}
+                    ? t("home.outOfRange", {
+                        distance: formatDistance(outcome.geofence.distance),
+                        allowed: formatDistance(outcome.geofence.allowed),
+                      })
+                    : t("home.locationUnverified")}
                 </Text>
               </View>
             ) : outcome?.kind === 'success' && outcome.res.location_status === 'verified' ? (
               <View style={[s.locationChip, { backgroundColor: colors.tintSuccess }]}>
                 <View style={[s.locationDot, { backgroundColor: colors.success }]} />
                 <Text style={[s.locationText, { color: colors.success }]} numberOfLines={2}>
-                  داخل النطاق{outcome.res.gps_distance_meters !== null ? ` · ${outcome.res.gps_distance_meters.toLocaleString('ar-EG-u-nu-latn')} م` : ''}
+                  {t("home.withinRange", { distance: formatDistance(outcome.res.gps_distance_meters) })}
                 </Text>
               </View>
             ) : (
               <View style={[s.locationChip, { backgroundColor: colors.tintBrand }]}>
                 <View style={[s.locationDot, { backgroundColor: colors.warning }]} />
                 <Text style={[s.locationText, { color: colors.textSecondary }]} numberOfLines={2}>
-                  يُلتقط موقعك عند التسجيل ويُتحقق من نطاق الموقع.
+                  {t("home.locationDefault")}
                 </Text>
               </View>
             )}
             {outcome?.kind === 'error' ? (
               <Text style={[s.hint, { color: colors.textMuted }]}>{outcome.message}</Text>
             ) : (
-              <Text style={[s.hint, { color: colors.textMuted }]}>يُلتقط موقعك عند التسجيل ويُتحقق أنك داخل نطاق الموقع.</Text>
+              <Text style={[s.hint, { color: colors.textMuted }]}>{t("home.locationHint")}</Text>
             )}
           </Card>
           </Animated.View>
@@ -583,7 +597,7 @@ export default function HomeScreen({
             <Card style={s.requestsCard}>
               <View style={s.cardHead}>
                 <View style={s.requestsTitle}>
-                  <Text style={[s.cardTitle, { color: colors.textPrimary }]}>صندوق الطلبات</Text>
+                  <Text style={[s.cardTitle, { color: colors.textPrimary }]}>{t("requests.title")}</Text>
                   {pendingCount !== null ? (
                     <View style={[s.countPill, { backgroundColor: pendingCount ? colors.tintCrimson : colors.surfaceElevated }]}>
                       <Text style={[s.countText, { color: pendingCount ? colors.crimson : colors.textMuted }]}>
@@ -593,7 +607,7 @@ export default function HomeScreen({
                   ) : null}
                 </View>
                 <View style={s.grow} />
-                <Button label="عرض الكل" variant="ghost" onPress={onOpenInbox} style={s.showAllButton} />
+                <Button label={t("requests.viewAll")} variant="ghost" onPress={onOpenInbox} style={s.showAllButton} />
               </View>
               <View style={[s.emptyState, { borderTopColor: colors.border }]}>
                 <View style={[s.emptyIcon, { backgroundColor: colors.tintBrand }]}>
@@ -607,10 +621,10 @@ export default function HomeScreen({
                 </View>
                 <Text style={[s.hint, { color: colors.textMuted, marginTop: 0 }]}>
                   {pendingCount === 0
-                    ? 'لا توجد طلبات تنتظر قرارك الآن.'
+                    ? t("requests.emptyPending")
                     : pendingCount === null
-                      ? 'بيانات الطلبات غير متاحة الآن.'
-                      : 'لديك طلبات تنتظر مراجعتك.'}
+                      ? t("requests.requestsUnavailable")
+                      : t("home.haveRequests", { count: tCount(pendingCount, REQUEST_FORMS) })}
                 </Text>
               </View>
             </Card>
@@ -619,9 +633,9 @@ export default function HomeScreen({
 
         <Animated.View style={[s.tiles, entryStyle(entryAnimations[2])]}>
           {session?.capabilities.can_create_penalty ? (
-            <Tile label="تسجيل جزاء" iconName="alert-circle" onPress={onOpenPenalty} tone="crimson" colors={colors} />
+            <Tile label={t("home.penalty")} iconName="alert-circle" onPress={onOpenPenalty} tone="crimson" colors={colors} />
           ) : null}
-          <Tile label="موظفو الموقع" iconName="users" onPress={onOpenEmployees} tone="brand" colors={colors} />
+          <Tile label={t("home.employees")} iconName="users" onPress={onOpenEmployees} tone="brand" colors={colors} />
         </Animated.View>
       </View>
     </ScrollView>
@@ -634,7 +648,7 @@ export default function HomeScreen({
           style={StyleSheet.absoluteFill}
           onPress={closeAccountMenu}
           accessibilityRole="button"
-          accessibilityLabel="إغلاق القائمة"
+          accessibilityLabel={t("home.closeMenu")}
         />
         <Animated.View
           style={[
@@ -660,7 +674,7 @@ export default function HomeScreen({
           <View style={[s.popupDivider, { backgroundColor: colors.border }]} />
 
           <View style={s.popupSection}>
-            <Text style={[s.popupSectionTitle, { color: colors.textSecondary }]}>المظهر</Text>
+            <Text style={[s.popupSectionTitle, { color: colors.textSecondary }]}>{t("home.theme")}</Text>
             <View
               style={[s.segmentedControl, { backgroundColor: colors.surface }]}
               onLayout={(event) => setSegmentedWidth(event.nativeEvent.layout.width)}
@@ -685,7 +699,7 @@ export default function HomeScreen({
                 accessibilityState={{ selected: mode === 'dark' }}
                 style={s.segmentItem}
               >
-                <Text style={[s.segmentText, { color: mode === 'dark' ? colors.onBrand : colors.textSecondary }]}>داكن</Text>
+                <Text style={[s.segmentText, { color: mode === 'dark' ? colors.onBrand : colors.textSecondary }]}>{t("home.dark")}</Text>
               </Pressable>
               <Pressable
                 onPress={() => setAppearance('light')}
@@ -693,7 +707,7 @@ export default function HomeScreen({
                 accessibilityState={{ selected: mode === 'light' }}
                 style={s.segmentItem}
               >
-                <Text style={[s.segmentText, { color: mode === 'light' ? colors.onBrand : colors.textSecondary }]}>فاتح</Text>
+                <Text style={[s.segmentText, { color: mode === 'light' ? colors.onBrand : colors.textSecondary }]}>{t("home.light")}</Text>
               </Pressable>
               <Pressable
                 onPress={() => setAppearance('system')}
@@ -701,7 +715,7 @@ export default function HomeScreen({
                 accessibilityState={{ selected: mode === 'system' }}
                 style={s.segmentItem}
               >
-                <Text style={[s.segmentText, { color: mode === 'system' ? colors.onBrand : colors.textSecondary }]}>تلقائي</Text>
+                <Text style={[s.segmentText, { color: mode === 'system' ? colors.onBrand : colors.textSecondary }]}>{t("home.system")}</Text>
               </Pressable>
             </View>
           </View>
@@ -713,10 +727,10 @@ export default function HomeScreen({
               onOpenProfile()
             }}
             accessibilityRole="button"
-            accessibilityLabel="الملف الشخصي"
+            accessibilityLabel={t("home.profile")}
             style={({ pressed }) => [s.popupItem, { backgroundColor: pressed ? colors.tintBrand : 'transparent' }]}
           >
-            <Text style={[s.popupActionText, { color: colors.textPrimary }]}>الملف الشخصي</Text>
+            <Text style={[s.popupActionText, { color: colors.textPrimary }]}>{t("home.profile")}</Text>
             <Icon name="user" size={18} color={colors.brandText} accessible={false} />
           </Pressable>
 
@@ -724,12 +738,11 @@ export default function HomeScreen({
           <Pressable
             onPress={handleLogoutPress}
             accessibilityRole="button"
-            accessibilityLabel="تسجيل الخروج"
+            accessibilityLabel={t("home.logoutItem")}
             style={({ pressed }) => [s.popupItem, { backgroundColor: pressed ? colors.tintCrimson : 'transparent' }]}
           >
             <View style={s.popupItemLabelWrap}>
-              <Text style={[s.popupItemText, { color: colors.crimson }]}>تسجيل</Text>
-              <Text style={[s.popupItemText, { color: colors.crimson }]}>الخروج</Text>
+              <Text style={[s.popupItemText, { color: colors.crimson }]}>{t("home.logoutItem")}</Text>
             </View>
             <Icon name="log-out" size={16} color={colors.crimson} accessible={false} />
           </Pressable>
@@ -766,12 +779,12 @@ function Tile({
 }) {
   const iconColor = tone === 'brand' ? colors.brandText : colors.crimson
   const iconBackground = tone === 'brand' ? colors.tintBrand : colors.tintCrimson
-  const subtitle = tone === 'brand' ? 'قائمة العاملين بالموقع' : 'مخالفة أو تأخير'
+  const subtitle = tone === 'brand' ? t("home.subtitleEmployees") : t("home.subtitlePenalty")
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${label}، ${subtitle}`}
+      accessibilityLabel={`${label}${t("common.listSeparator")}${subtitle}`}
       card
       style={[
         s.tile,
@@ -791,11 +804,7 @@ function Tile({
 }
 
 function todayLabel(date: Date) {
-  return date.toLocaleDateString('ar-EG-u-nu-latn', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  return formatDateShort(date)
 }
 
 function modeIndex(mode: 'system' | 'light' | 'dark') {
@@ -803,22 +812,12 @@ function modeIndex(mode: 'system' | 'light' | 'dark') {
 }
 
 function timeNow(date: Date) {
-  return date.toLocaleTimeString('ar-EG-u-nu-latn', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h12',
-    dayPeriod: 'short',
-  })
+  return formatTime12(date)
 }
 
 function timeOf(iso: string | null) {
   if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hourCycle: 'h12',
-    dayPeriod: 'short',
-  })
+  return formatTime12(new Date(iso))
 }
 
 const s = StyleSheet.create({
@@ -850,6 +849,8 @@ const s = StyleSheet.create({
     textAlign: 'right',
     alignSelf: 'flex-end',
     writingDirection: 'rtl',
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
   },
   siteRow: {
     flexDirection: 'row',
@@ -925,6 +926,8 @@ const s = StyleSheet.create({
     fontSize: 11,
     fontFamily: font.familyBold,
     textAlign: 'center',
+    lineHeight: lineHeightFor(11),
+    ...baseText,
   },
   popupBackdrop: {
     position: 'absolute',
@@ -962,6 +965,8 @@ const s = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
     alignSelf: 'stretch',
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
   popupRole: {
     width: '100%',
@@ -970,6 +975,36 @@ const s = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
     alignSelf: 'stretch',
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
+  },
+  popupItemText: {
+    fontSize: font.size.md,
+    fontFamily: font.familySemiBold,
+    flexShrink: 0,
+    writingDirection: 'rtl',
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
+  },
+  popupActionText: {
+    flex: 1,
+    fontSize: font.size.md,
+    fontFamily: font.familySemiBold,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
+  },
+  popupSectionTitle: {
+    width: '100%',
+    fontSize: font.size.sm,
+    fontFamily: font.familySemiBold,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    alignSelf: 'stretch',
+    marginBottom: spacing.xs,
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   popupDivider: {
     height: 1,
@@ -994,33 +1029,11 @@ const s = StyleSheet.create({
     width: 180,
     alignItems: 'center',
   },
-  popupItemText: {
-    fontSize: font.size.md,
-    fontFamily: font.familySemiBold,
-    flexShrink: 0,
-    writingDirection: 'rtl',
-  },
-  popupActionText: {
-    flex: 1,
-    fontSize: font.size.md,
-    fontFamily: font.familySemiBold,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
   popupSection: {
     width: '100%',
     direction: 'ltr',
     paddingHorizontal: spacing.sm,
     alignItems: 'flex-end',
-  },
-  popupSectionTitle: {
-    width: '100%',
-    fontSize: font.size.sm,
-    fontFamily: font.familySemiBold,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-    alignSelf: 'stretch',
-    marginBottom: spacing.xs,
   },
   segmentedControl: {
     width: '100%',
@@ -1042,6 +1055,8 @@ const s = StyleSheet.create({
     fontSize: font.size.sm,
     fontFamily: font.familyMedium,
     textAlign: 'center',
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   segmentIndicator: {
     position: 'absolute',
@@ -1061,11 +1076,14 @@ const s = StyleSheet.create({
     fontSize: font.size.md,
     fontFamily: font.familyMedium,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
   },
   cardTitle: {
     fontSize: 20,
-    lineHeight: 28,
+    lineHeight: lineHeightFor(20),
     fontFamily: font.familySemiBold,
+    ...baseText,
   },
   requestsTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   grow: { flex: 1 },
@@ -1080,19 +1098,24 @@ const s = StyleSheet.create({
   countText: {
     fontSize: font.size.sm,
     fontFamily: font.familySemiBold,
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   state: {
     fontSize: font.size.title,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
     marginBottom: spacing.lg,
+    lineHeight: lineHeightFor(font.size.title),
+    ...baseText,
   },
   hint: {
     fontSize: 12,
     fontFamily: font.family,
     textAlign: 'right',
     marginTop: spacing.sm,
-    lineHeight: 18,
+    lineHeight: lineHeightFor(12),
+    ...baseText,
   },
   todayError: { gap: spacing.sm, alignItems: 'center', marginTop: spacing.md },
   punchCard: {
@@ -1121,11 +1144,12 @@ const s = StyleSheet.create({
   heroClock: { alignItems: 'flex-end' },
   heroTime: {
     fontSize: 32,
-    lineHeight: 40,
+    lineHeight: lineHeightFor(32),
     fontFamily: font.familyBold,
     fontVariant: ['tabular-nums'],
+    ...baseText,
   },
-  heroDate: { fontSize: 12, lineHeight: 18, fontFamily: font.family },
+  heroDate: { fontSize: 12, lineHeight: lineHeightFor(12), fontFamily: font.family, ...baseText },
   heroAction: { alignItems: 'center', justifyContent: 'center', minHeight: 194 },
   pulseRing: {
     position: 'absolute',
@@ -1148,15 +1172,15 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
   },
-  punchTime: { fontSize: 15, fontFamily: font.familyBold },
+  punchTime: { fontSize: 15, lineHeight: lineHeightFor(15), fontFamily: font.familyBold, ...baseText },
   punchLabel: {
     alignSelf: 'stretch',
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: lineHeightFor(16),
     fontFamily: font.familyBold,
     marginTop: spacing.sm,
     textAlign: 'center',
-    includeFontPadding: false,
+    ...baseText,
   },
   locationChip: {
     minHeight: 32,
@@ -1174,9 +1198,10 @@ const s = StyleSheet.create({
     flex: 1,
     flexShrink: 1,
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: lineHeightFor(12),
     fontFamily: font.familySemiBold,
     textAlign: 'center',
+    ...baseText,
   },
   requestsCard: { padding: spacing.lg, borderRadius: radius.xl },
   emptyState: {
@@ -1193,7 +1218,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   showAllButton: { width: 132, minHeight: 44, paddingHorizontal: spacing.sm },
-  emptyStateText: { fontSize: 13, lineHeight: 20, fontFamily: font.family, textAlign: 'center' },
+  emptyStateText: { fontSize: 13, lineHeight: lineHeightFor(13), fontFamily: font.family, textAlign: 'center', ...baseText },
   retry: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
@@ -1202,7 +1227,9 @@ const s = StyleSheet.create({
   },
   retryText: {
     fontSize: font.size.base,
+    lineHeight: lineHeightFor(font.size.base),
     fontFamily: font.familySemiBold,
+    ...baseText,
   },
   tiles: { flexDirection: 'row', gap: spacing.md },
   tile: {
@@ -1225,14 +1252,16 @@ const s = StyleSheet.create({
   tileText: { flex: 1, gap: spacing.xs },
   tileLabel: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: lineHeightFor(15),
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    ...baseText,
   },
   tileSubtitle: {
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: lineHeightFor(12),
     fontFamily: font.family,
     textAlign: 'right',
+    ...baseText,
   },
 })

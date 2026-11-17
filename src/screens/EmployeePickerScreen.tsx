@@ -13,7 +13,8 @@ import { ScreenHeader, SolidButton } from '../components/ui'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { Icon } from '../components/Icon'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, radius, spacing } from '../theme/tokens'
+import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t } from '../i18n'
 
 interface Props {
   title?: string
@@ -34,7 +35,7 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
   const load = useCallback(
     async (q: string) => {
       if (siteId === null) {
-        setError('حسابك غير مرتبط بموقع، فلا توجد قائمة موظفين لعرضها.')
+        setError(t("employees.noSite"))
         setLoading(false)
         return
       }
@@ -61,14 +62,14 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
 
   return (
     <View style={[s.screen, { backgroundColor: colors.background }]}>
-      <ScreenHeader title={title ?? 'موظفو الموقع'} onBack={onBack} />
+      <ScreenHeader title={title ?? t("employees.title")} onBack={onBack} />
 
       <View style={[s.searchWrap, { borderBottomColor: colors.border }]}>
         <TextInput
           style={[s.search, { backgroundColor: colors.inputBg, color: colors.inputText }]}
           value={query}
           onChangeText={setQuery}
-          placeholder="ابحث بالاسم أو الرقم الوظيفي"
+          placeholder={t("employees.searchPlaceholder")}
           placeholderTextColor={colors.inputPlaceholder}
           autoCorrect={false}
         />
@@ -83,11 +84,11 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
       ) : error ? (
         <View style={s.center}>
           <Text style={[s.centerText, { color: colors.textMuted }]}>{error}</Text>
-          <SolidButton
-            label="إعادة المحاولة"
-            tone="neutral"
-            onPress={() => load(query.trim())}
-          />
+            <SolidButton
+              label={t("common.retry")}
+              tone="neutral"
+              onPress={() => load(query.trim())}
+            />
         </View>
       ) : (
         <FlatList
@@ -100,7 +101,7 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
             <View style={s.emptyContainer}>
               <Icon name="users" size={32} color={colors.textMuted} accessible={false} />
               <Text style={[s.empty, { color: colors.textMuted }]}>
-                {query ? 'لا نتائج مطابقة.' : 'لا يوجد موظفون في هذا الموقع.'}
+                {query ? t("employees.noMatch") : t("employees.noEmployees")}
               </Text>
             </View>
           }
@@ -163,6 +164,8 @@ const s = StyleSheet.create({
     fontSize: font.size.lg,
     fontFamily: font.family,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.lg),
+    ...baseText,
   },
   list: { padding: spacing.lg, gap: spacing.sm },
   row: {
@@ -184,18 +187,24 @@ const s = StyleSheet.create({
   avatarText: {
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
   },
   rowText: { flex: 1 },
   rowName: {
     fontSize: font.size.base,
     fontFamily: font.familyMedium,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
   rowMeta: {
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
     marginTop: 2,
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   center: {
     flex: 1,
@@ -208,7 +217,8 @@ const s = StyleSheet.create({
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
   skeletonRow: {
     flexDirection: 'row',
@@ -240,5 +250,7 @@ const s = StyleSheet.create({
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
 })

@@ -24,6 +24,7 @@ import type {
   MobileLoginResult,
   SessionPayload,
 } from '../api/types'
+import { t } from '../i18n'
 
 type Status = 'loading' | 'signedOut' | 'signedIn'
 
@@ -143,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           dropSession()
         } else {
           // Transient: keep the tokens, surface a retry.
-          setAuthError(err instanceof Error ? err.message : 'تعذّر الاتصال بالخادم. حاول مرة أخرى.')
+          setAuthError(err instanceof Error ? err.message : t('errors.serverError'))
           setStatus('loading')
         }
       }
@@ -171,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await clearTokens()
         dropSession()
       } else {
-        setAuthError(err instanceof Error ? err.message : 'تعذّر الاتصال بالخادم. حاول مرة أخرى.')
+        setAuthError(err instanceof Error ? err.message : t('errors.serverError'))
       }
     }
   }, [dropSession])

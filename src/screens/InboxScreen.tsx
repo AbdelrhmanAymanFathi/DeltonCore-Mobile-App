@@ -11,19 +11,20 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { api, messageFor } from '../api/client'
 import type { ApprovalRequestSummary, RequestType } from '../api/types'
-import { font, radius, spacing, type ThemeColors } from '../theme/tokens'
+import { font, radius, spacing, type ThemeColors, lineHeightFor, baseText } from '../theme/tokens'
 import { useTheme } from '../theme/ThemeProvider'
 import { Icon } from '../components/Icon'
 import { ScreenHeader } from '../components/ui'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { getRequestTypeAppearance } from '../constants/requestTypes'
+import { t, formatNumber, formatDateShort } from '../i18n'
 
 const FILTERS: { key: RequestType | 'all'; label: string; icon: string }[] = [
-  { key: 'all', label: 'الكل', icon: 'view-grid-outline' },
-  { key: 'leave', label: 'إجازة', icon: 'palm-tree' },
-  { key: 'loan', label: 'سلفة', icon: 'cash-fast' },
-  { key: 'mission', label: 'إذن', icon: 'clock-out' },
-  { key: 'penalty', label: 'جزاء', icon: 'gavel' },
+  { key: 'all', label: t("requests.all"), icon: 'view-grid-outline' },
+  { key: 'leave', label: t("requests.leave"), icon: 'palm-tree' },
+  { key: 'loan', label: t("requests.loan"), icon: 'cash-fast' },
+  { key: 'mission', label: t("requests.mission"), icon: 'clock-out' },
+  { key: 'penalty', label: t("requests.penalty"), icon: 'gavel' },
 ]
 
 interface Props {
@@ -94,7 +95,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
 
   return (
     <View style={[s.screen, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="صندوق الطلبات" onBack={onBack} />
+      <ScreenHeader title={t("requests.title")} onBack={onBack} />
 
       <View
         style={[s.tabs, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -121,7 +122,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
           />
         ) : null}
         <Tab
-          label="منتظر قراري"
+          label={t("requests.pendingTab")}
           badge={pendingCount > 0 ? pendingCount : undefined}
           active={tab === 'pending'}
           onPress={() => {
@@ -131,7 +132,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
           colors={colors}
         />
         <Tab
-          label="تم البت"
+          label={t("requests.decidedTab")}
           active={tab === 'decided'}
           onPress={() => {
             if (tab === 'decided') void onRefresh()
@@ -182,7 +183,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
                 {item.label}
               </Text>
               <Text style={[s.chipCount, { color: active ? colors.brandText : colors.textMuted }]}>
-                {typeCount.toLocaleString('ar-EG-u-nu-latn')}
+                {formatNumber(typeCount)}
               </Text>
             </Pressable>
           )
@@ -201,7 +202,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
             onPress={onRefresh}
             style={[s.retry, { backgroundColor: colors.surface, borderColor: colors.border }]}
           >
-            <Text style={[s.retryText, { color: colors.textPrimary }]}>إعادة المحاولة</Text>
+            <Text style={[s.retryText, { color: colors.textPrimary }]}>{t("requests.retry")}</Text>
           </Pressable>
         </View>
       ) : (
@@ -220,9 +221,9 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
           ListEmptyComponent={<EmptyState decided={tab === 'decided'} colors={colors} />}
           ListFooterComponent={
             rows.length > 0 ? (
-              <Text style={[s.foot, { color: colors.textMuted }]}>
-                يظهر هنا ما ينتظر قرارك أنت فقط، حسب صلاحياتك وسير الاعتماد.
-              </Text>
+            <Text style={[s.foot, { color: colors.textMuted }]}>
+              {t("requests.footnote")}
+            </Text>
             ) : undefined
           }
           renderItem={({ item }) => (
@@ -264,7 +265,7 @@ function Tab({
       {badge !== undefined ? (
         <View style={[s.tabBadge, { backgroundColor: colors.badgeCrimson }]}>
           <Text style={[s.tabBadgeText, { color: colors.onCrimson }]}>
-            {badge > 99 ? '99+' : badge.toLocaleString('ar-EG-u-nu-latn')}
+            {badge > 99 ? '99+' : formatNumber(badge)}
           </Text>
         </View>
       ) : null}
@@ -290,7 +291,7 @@ function RequestCard({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${item.employee.full_name_ar}، ${appearance.label}`}
+      accessibilityLabel={`${item.employee.full_name_ar}${t("common.listSeparator")}${appearance.label}`}
       card
       style={[s.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
     >
@@ -335,9 +336,9 @@ function EmptyState({ decided, colors }: { decided: boolean; colors: ThemeColors
       <View style={[s.emptyIcon, { backgroundColor: colors.tintBrand }]}>
         <Icon name="inbox" size={34} color={colors.brandText} accessible={false} />
       </View>
-      <Text style={[s.emptyTitle, { color: colors.textPrimary }]}>لا توجد طلبات</Text>
+      <Text style={[s.emptyTitle, { color: colors.textPrimary }]}>{t("requests.emptyTitle")}</Text>
       <Text style={[s.emptyDescription, { color: colors.textMuted }]}>
-        {decided ? 'ستظهر هنا الطلبات التي تم البت فيها.' : 'لا توجد طلبات تنتظر قرارك الآن.'}
+        {decided ? t("requests.emptyDecided") : t("requests.emptyPending")}
       </Text>
     </View>
   )
@@ -358,7 +359,7 @@ function SkeletonRow({ colors }: { colors: ThemeColors }) {
 function formatRequestDate(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long' })
+  return formatDateShort(date)
 }
 
 const s = StyleSheet.create({
@@ -388,7 +389,7 @@ const s = StyleSheet.create({
     gap: spacing.sm,
     zIndex: 1,
   },
-  tabText: { fontSize: font.size.base, fontFamily: font.familyMedium },
+  tabText: { fontSize: font.size.base, fontFamily: font.familyMedium, lineHeight: lineHeightFor(font.size.base), ...baseText },
   tabBadge: {
     minWidth: 18,
     height: 18,
@@ -397,7 +398,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabBadgeText: { fontSize: font.size.xs, fontFamily: font.familyBold },
+  tabBadgeText: { fontSize: font.size.xs, fontFamily: font.familyBold, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   filterScroll: { flexGrow: 0, height: 60, direction: 'rtl' },
   filters: {
     flexDirection: 'row',
@@ -417,8 +418,8 @@ const s = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
   },
-  chipText: { fontSize: font.size.sm, fontFamily: font.familyMedium },
-  chipCount: { fontSize: font.size.xs, fontFamily: font.familySemiBold },
+  chipText: { fontSize: font.size.sm, fontFamily: font.familyMedium, lineHeight: lineHeightFor(font.size.sm), ...baseText },
+  chipCount: { fontSize: font.size.xs, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
   emptyList: { flexGrow: 1, justifyContent: 'center' },
   card: { borderWidth: 1, borderRadius: 20, padding: 14 },
@@ -431,14 +432,14 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   cardText: { flex: 1, alignItems: 'flex-start', gap: spacing.xs },
-  name: { alignSelf: 'stretch', textAlign: 'right', fontSize: 15, fontFamily: font.familyBold },
+  name: { alignSelf: 'stretch', textAlign: 'right', fontSize: 15, fontFamily: font.familyBold, lineHeight: lineHeightFor(15), ...baseText },
   typeBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill },
-  typeBadgeText: { fontSize: font.size.xs, fontFamily: font.familySemiBold },
-  detail: { alignSelf: 'stretch', textAlign: 'right', fontSize: font.size.md, lineHeight: 20, fontFamily: font.family },
+  typeBadgeText: { fontSize: font.size.xs, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.xs), ...baseText },
+  detail: { alignSelf: 'stretch', textAlign: 'right', fontSize: font.size.md, lineHeight: lineHeightFor(font.size.md), fontFamily: font.family, ...baseText },
   cardMeta: { width: 64, flexShrink: 0, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'space-between' },
   dateRow: { width: '100%', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
   staleDot: { width: 7, height: 7, borderRadius: radius.pill },
-  when: { fontSize: font.size.xs, fontFamily: font.family, textAlign: 'left' },
+  when: { fontSize: font.size.xs, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.xs), ...baseText },
   skeletonCard: {
     minHeight: 86,
     borderWidth: 1,
@@ -453,12 +454,12 @@ const s = StyleSheet.create({
   skeletonName: { width: '65%', height: 16, borderRadius: radius.sm },
   skeletonDetail: { width: '90%', height: 13, borderRadius: radius.sm },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
-  error: { fontSize: font.size.base, fontFamily: font.family, textAlign: 'center', lineHeight: 24 },
+  error: { fontSize: font.size.base, fontFamily: font.family, textAlign: 'center', lineHeight: lineHeightFor(font.size.base), ...baseText },
   retry: { paddingHorizontal: spacing.xl, minHeight: 44, justifyContent: 'center', borderRadius: radius.md, borderWidth: 1 },
-  retryText: { fontSize: font.size.base, fontFamily: font.familySemiBold },
+  retryText: { fontSize: font.size.base, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.base), ...baseText },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
   emptyIcon: { width: 76, height: 76, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontSize: font.size.title, fontFamily: font.familySemiBold },
-  emptyDescription: { fontSize: font.size.sm, fontFamily: font.family, textAlign: 'center' },
-  foot: { fontSize: font.size.sm, fontFamily: font.family, textAlign: 'center', marginVertical: spacing.sm },
+  emptyTitle: { fontSize: font.size.title, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.title), ...baseText },
+  emptyDescription: { fontSize: font.size.sm, fontFamily: font.family, textAlign: 'center', lineHeight: lineHeightFor(font.size.sm), ...baseText },
+  foot: { fontSize: font.size.sm, fontFamily: font.family, textAlign: 'center', lineHeight: lineHeightFor(font.size.sm), marginVertical: spacing.sm, ...baseText },
 })

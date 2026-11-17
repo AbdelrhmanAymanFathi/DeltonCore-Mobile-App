@@ -6,6 +6,7 @@ import PenaltyScreen from './PenaltyScreen'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { radius } from '../theme/tokens'
+import { t } from '../i18n'
 
 /**
  * The penalty form and its employee picker as one unit.
@@ -61,13 +62,13 @@ export default function PenaltyFlow({
         <View style={styles.modal}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="إغلاق اختيار الموظف"
+            accessibilityLabel={t("employees.closePicker")}
             onPress={() => setPicking(false)}
             style={[styles.backdrop, { backgroundColor: colors.scrim }]}
           />
           <View style={[styles.sheet, { backgroundColor: colors.background }]}>
             <EmployeePickerScreen
-              title="اختر الموظف"
+              title={t("employees.pickerTitle")}
               onBack={() => setPicking(false)}
               onPick={(picked) => {
                 setEmployee(picked)

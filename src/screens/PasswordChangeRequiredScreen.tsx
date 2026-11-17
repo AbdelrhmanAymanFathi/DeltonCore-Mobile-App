@@ -4,7 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthContext'
 import { Banner, Card, SolidButton } from '../components/ui'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, radius, spacing } from '../theme/tokens'
+import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t, tCount } from '../i18n'
+import { DAY_FORMS } from '../i18n/plural'
 
 export default function PasswordChangeRequiredScreen() {
   const { colors } = useTheme()
@@ -35,24 +37,23 @@ export default function PasswordChangeRequiredScreen() {
         <Card style={s.card}>
           <View style={s.head}>
             <View style={[s.pill, { backgroundColor: colors.tintCrimson, borderColor: colors.crimson }]}>
-              <Text style={[s.pillText, { color: colors.crimson }]}>كلمة المرور</Text>
+              <Text style={[s.pillText, { color: colors.crimson }]}>{t("login.passwordLabel")}</Text>
             </View>
-            <Text style={[s.title, { color: colors.textPrimary }]}>انتهت صلاحية كلمة المرور</Text>
+            <Text style={[s.title, { color: colors.textPrimary }]}>{t("common.passwordExpired")}</Text>
           </View>
 
           <Banner tone="warn">
             {days > 0
-              ? `تبقّى ${days.toLocaleString('ar-EG-u-nu-latn')} يومًا قبل أن يُقفل حسابك. يجب تغيير كلمة المرور من النسخة الويب.`
-              : 'انتهت صلاحية كلمة المرور. يجب تغييرها من النسخة الويب قبل استخدام التطبيق.'}
+              ? t("common.passwordExpireSoon", { days: tCount(days, DAY_FORMS) })
+              : t("common.passwordExpiredMsg")}
           </Banner>
 
           <Text style={[s.body, { color: colors.textMuted }]}>
-            تطبيق المشرفين لا يتيح تغيير كلمة المرور. افتح Delton Core People على
-            الحاسب، غيّر كلمة المرور من إعدادات حسابك، ثم سجّل الدخول هنا من جديد.
+            {t("common.passwordBody")}
           </Text>
 
           <SolidButton
-            label="تسجيل الخروج"
+            label={t("common.logout")}
             tone="neutral"
             busy={busy}
             disabled={busy}
@@ -77,18 +78,22 @@ const s = StyleSheet.create({
   },
   pillText: {
     fontSize: 10,
-    letterSpacing: 1.4,
     fontFamily: font.familySemiBold,
+    lineHeight: lineHeightFor(10),
+    ...baseText,
   },
   title: {
     fontSize: 22,
     fontFamily: font.familyBold,
     textAlign: 'center',
+    lineHeight: lineHeightFor(22),
+    ...baseText,
   },
   body: {
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'right',
-    lineHeight: 24,
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
 })

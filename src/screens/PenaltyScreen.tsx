@@ -16,7 +16,9 @@ import { Button, ScreenHeader, SolidButton } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, radius, spacing } from '../theme/tokens'
+import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t, tCount, formatNumber } from '../i18n'
+import { DAY_FORMS } from '../i18n/plural'
 
 interface Props {
   onBack: () => void
@@ -120,26 +122,30 @@ export default function PenaltyScreen({
   function confirmSubmission() {
     if (!ready || !pickedEmployee || !penaltyType) return
     Alert.alert(
-      'تأكيد تسجيل الجزاء',
-      `تسجيل جزاء ${penaltyType.name} على ${pickedEmployee.name} لمدة ${days.toLocaleString('ar-EG-u-nu-latn')} يوم؟`,
+      t("penalty.confirmTitle"),
+      t("penalty.confirmMessage", {
+        type: penaltyType.name,
+        name: pickedEmployee.name,
+        duration: tCount(days, DAY_FORMS),
+      }),
       [
-        { text: 'إلغاء', style: 'cancel' },
-        { text: 'تأكيد', style: 'destructive', onPress: () => void submit() },
+        { text: t("common.cancel"), style: 'cancel' },
+        { text: t("common.confirm"), style: 'destructive', onPress: () => void submit() },
       ],
     )
   }
 
   const missingFields = [
-    !pickedEmployee && 'اختر الموظف',
-    !penaltyType && 'اختر نوع الجزاء',
-    !daysValid && 'أدخل عدد الأيام',
-    reason.trim().length === 0 && 'أضف السبب',
+    !pickedEmployee && t("penalty.missingEmployee"),
+    !penaltyType && t("penalty.missingType"),
+    !daysValid && t("penalty.missingDays"),
+    reason.trim().length === 0 && t("penalty.missingReason"),
   ].filter(Boolean) as string[]
 
   if (loading) {
     return (
       <View style={[s.screen, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="تسجيل جزاء" onBack={onBack} />
+        <ScreenHeader title={t("penalty.title")} onBack={onBack} />
         <View style={s.skeletonContainer}>
           {[0, 1, 2, 3].map((index) => (
             <View key={index} style={[s.skeletonLine, { backgroundColor: colors.surfaceElevated }]} />
@@ -152,10 +158,10 @@ export default function PenaltyScreen({
   if (loadError || !ctx) {
     return (
       <View style={[s.screen, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="تسجيل جزاء" onBack={onBack} />
+        <ScreenHeader title={t("penalty.title")} onBack={onBack} />
         <View style={s.center}>
           <Text style={[s.centerText, { color: colors.textMuted }]}>{loadError}</Text>
-          <SolidButton label="إعادة المحاولة" tone="neutral" onPress={load} />
+          <SolidButton label={t("common.retry")} tone="neutral" onPress={load} />
         </View>
       </View>
     )
@@ -167,7 +173,7 @@ export default function PenaltyScreen({
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={insets.top}
     >
-      <ScreenHeader title="تسجيل جزاء" onBack={onBack} />
+      <ScreenHeader title={t("penalty.title")} onBack={onBack} />
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.body}
@@ -178,24 +184,24 @@ export default function PenaltyScreen({
           <View style={[s.periodChip, { backgroundColor: colors.tintSuccess }]}>
             <View style={[s.periodDot, { backgroundColor: colors.success }]} />
             <Text style={[s.periodText, { color: colors.success }]}>
-              الفترة المحاسبية: {ctx.open_period!.label} · مفتوحة
+              {t("penalty.periodOpen", { label: ctx.open_period!.label })}
             </Text>
           </View>
         ) : (
           <View style={[s.closedBanner, { backgroundColor: colors.tintCrimson, borderColor: colors.crimson }]}>
             <Icon name="alert-circle" size={20} color={colors.crimson} accessible={false} />
             <Text style={[s.closedText, { color: colors.crimson }]}>
-              الفترة المحاسبية مغلقة، لا يمكن تسجيل جزاء
+              {t("penalty.periodClosedShort")}
             </Text>
           </View>
         )}
 
-        <StepCard step={1} title="الموظف" colors={colors} disabled={controlsDisabled}>
+        <StepCard step={1} title={t("penalty.employee")} colors={colors} disabled={controlsDisabled}>
           <Pressable
             onPress={onPickEmployee}
             disabled={controlsDisabled}
             accessibilityRole="button"
-            accessibilityLabel={pickedEmployee ? `الموظف ${pickedEmployee.name}` : 'اختر موظفاً'}
+            accessibilityLabel={pickedEmployee ? pickedEmployee.name : t("penalty.chooseEmployee")}
             style={[
               s.employeeCard,
               {
@@ -224,7 +230,7 @@ export default function PenaltyScreen({
                   <Icon name="account-search" family="material-community" size={22} color={colors.brandText} accessible={false} />
                 </View>
                 <Text style={[s.employeeName, { color: controlsDisabled ? colors.textMuted : colors.textSecondary }]}>
-                  اختر موظفاً
+                  {t("penalty.chooseEmployee")}
                 </Text>
               </>
             )}
@@ -232,11 +238,11 @@ export default function PenaltyScreen({
           </Pressable>
         </StepCard>
 
-        <StepCard step={2} title="نوع الجزاء" colors={colors} disabled={controlsDisabled}>
+        <StepCard step={2} title={t("penalty.penaltyType")} colors={colors} disabled={controlsDisabled}>
           <View style={s.typeGrid}>
             {ctx.penalty_types.map((type) => {
               const active = penaltyType?.id === type.id
-              const icon = penaltyIcon(type.name)
+              const icon = penaltyIcon(type.id)
               return (
                 <Pressable
                   key={type.id}
@@ -270,13 +276,13 @@ export default function PenaltyScreen({
           </View>
         </StepCard>
 
-        <StepCard step={3} title="عدد الأيام" colors={colors} disabled={controlsDisabled}>
+        <StepCard step={3} title={t("penalty.days")} colors={colors} disabled={controlsDisabled}>
           <View style={s.stepper}>
             <Pressable
               onPress={() => setDays((value) => Math.max(1, value - 1))}
               disabled={controlsDisabled || days <= 1}
               accessibilityRole="button"
-              accessibilityLabel="تقليل عدد الأيام"
+              accessibilityLabel={t("penalty.decreaseDays")}
               style={[
                 s.stepperButton,
                 { backgroundColor: controlsDisabled || days <= 1 ? colors.surfaceElevated : colors.surface, borderColor: colors.border },
@@ -285,13 +291,13 @@ export default function PenaltyScreen({
               <Icon name="minus" size={20} color={controlsDisabled || days <= 1 ? colors.textMuted : colors.textPrimary} accessible={false} />
             </Pressable>
             <Text style={[s.daysNumber, { color: controlsDisabled ? colors.textMuted : colors.textPrimary }]}>
-              {days.toLocaleString('ar-EG-u-nu-latn')}
+              {formatNumber(days)}
             </Text>
             <Pressable
               onPress={() => setDays((value) => value + 1)}
               disabled={controlsDisabled}
               accessibilityRole="button"
-              accessibilityLabel="زيادة عدد الأيام"
+              accessibilityLabel={t("penalty.increaseDays")}
               style={[
                 s.stepperButton,
                 { backgroundColor: controlsDisabled ? colors.surfaceElevated : colors.surface, borderColor: colors.border },
@@ -302,18 +308,21 @@ export default function PenaltyScreen({
           </View>
           <View style={s.daysHintRow}>
             <Text style={[s.daysHint, { color: colors.textSecondary }]}>
-              خصم {days.toLocaleString('ar-EG-u-nu-latn')} يوم من الراتب الأساسي
+              {t("penalty.daysHint", {
+                count: formatNumber(days),
+                unit: tCount(days, DAY_FORMS),
+              })}
             </Text>
             {overCap ? (
               <View style={[s.reviewChip, { backgroundColor: colors.tintBrand }]}>
                 <Icon name="alert-circle-outline" size={14} color={colors.warning} accessible={false} />
-                <Text style={[s.reviewText, { color: colors.warning }]}>سيُعلَّم للمراجعة</Text>
+                <Text style={[s.reviewText, { color: colors.warning }]}>{t("penalty.review")}</Text>
               </View>
             ) : null}
           </View>
         </StepCard>
 
-        <StepCard step={4} title="السبب" colors={colors} disabled={controlsDisabled}>
+        <StepCard step={4} title={t("penalty.reason")} colors={colors} disabled={controlsDisabled}>
           <TextInput
             style={[
               s.textarea,
@@ -331,17 +340,17 @@ export default function PenaltyScreen({
             multiline
             maxLength={300}
             editable={!controlsDisabled}
-            placeholder="ماذا حدث بالضبط ومتى؟"
+            placeholder={t("penalty.reasonPlaceholder")}
             placeholderTextColor={colors.inputPlaceholder}
             textAlign="right"
             textAlignVertical="top"
           />
           <View style={s.reasonMeta}>
             <Text style={[s.note, { color: colors.textMuted }]}>
-              يُعتمد الجزاء قبل احتسابه ضمن الراتب.
+              {t("penalty.reasonNote")}
             </Text>
             <Text style={[s.counter, { color: colors.textMuted }]}>
-              {reason.length.toLocaleString('ar-EG-u-nu-latn')}/300
+              {formatNumber(reason.length)}/300
             </Text>
           </View>
         </StepCard>
@@ -363,12 +372,12 @@ export default function PenaltyScreen({
         },
       ]}>
         <Button
-          label="تسجيل الجزاء"
+          label={t("penalty.submit")}
           variant="danger"
           dangerEmphasis
           onPress={confirmSubmission}
           busy={submitting}
-          busyLabel="جارٍ التسجيل…"
+          busyLabel={t("penalty.submitting")}
           disabled={!ready}
           iconName="check"
           style={{ backgroundColor: ready ? colors.crimson : colors.surface }}
@@ -376,10 +385,10 @@ export default function PenaltyScreen({
         {!ready ? (
           <Text style={[s.footerHint, { color: colors.textMuted }]}>
             {unavailable
-              ? 'الفترة المحاسبية مغلقة، لا يمكن التسجيل.'
+              ? t("penalty.periodClosedFooter")
               : successVisible
-                ? 'تم تسجيل الجزاء بنجاح.'
-                : missingFields.join('، ')}
+                ? t("penalty.successFooter")
+                : missingFields.join(t("common.listSeparator"))}
           </Text>
         ) : null}
       </View>
@@ -387,7 +396,7 @@ export default function PenaltyScreen({
       {successVisible ? (
         <View style={[s.toast, { top: insets.top + spacing.sm, backgroundColor: colors.tintSuccess, borderColor: colors.success }]}>
           <Icon name="check-circle" size={20} color={colors.success} accessible={false} />
-          <Text style={[s.toastText, { color: colors.success }]}>تم تسجيل الجزاء بنجاح</Text>
+          <Text style={[s.toastText, { color: colors.success }]}>{t("penalty.success")}</Text>
         </View>
       ) : null}
     </KeyboardAvoidingView>
@@ -423,7 +432,7 @@ function StepCard({
       <View style={s.stepHeading}>
         <View style={[s.stepNumber, { backgroundColor: colors.tintBrand }]}>
           <Text style={[s.stepNumberText, { color: colors.brandText }]}>
-            {step.toLocaleString('ar-EG-u-nu-latn')}
+            {formatNumber(step)}
           </Text>
         </View>
         <Text style={[s.stepTitle, { color: colors.textPrimary }]}>{title}</Text>
@@ -437,11 +446,11 @@ function employeeInitials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0] ?? '').join('')
 }
 
-function penaltyIcon(name: string) {
-  if (/تأخير|تأخر|تأخّر/.test(name)) return 'clock-alert-outline'
-  if (/غياب/.test(name)) return 'account-off-outline'
-  if (/سلامة/.test(name)) return 'hard-hat'
-  if (/سلوك/.test(name)) return 'account-alert-outline'
+function penaltyIcon(typeId: number): string {
+  if (typeId === 1) return 'clock-alert-outline'
+  if (typeId === 2) return 'account-off-outline'
+  if (typeId === 3) return 'hard-hat'
+  if (typeId === 4) return 'account-alert-outline'
   return 'gavel'
 }
 
@@ -452,7 +461,7 @@ const s = StyleSheet.create({
   skeletonContainer: { padding: spacing.lg, gap: spacing.md },
   skeletonLine: { height: 96, borderRadius: radius.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
-  centerText: { fontSize: font.size.base, fontFamily: font.family, textAlign: 'center', lineHeight: 24 },
+  centerText: { fontSize: font.size.base, fontFamily: font.family, textAlign: 'center', lineHeight: lineHeightFor(font.size.base), ...baseText },
   periodChip: {
     minHeight: 36,
     flexDirection: 'row',
@@ -463,7 +472,7 @@ const s = StyleSheet.create({
     borderRadius: radius.pill,
   },
   periodDot: { width: 8, height: 8, borderRadius: radius.pill },
-  periodText: { fontSize: font.size.sm, fontFamily: font.familySemiBold },
+  periodText: { fontSize: font.size.sm, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.sm), ...baseText },
   closedBanner: {
     minHeight: 52,
     flexDirection: 'row',
@@ -473,12 +482,12 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.md,
   },
-  closedText: { flex: 1, fontSize: font.size.base, lineHeight: 22, fontFamily: font.familySemiBold, textAlign: 'right' },
+  closedText: { flex: 1, fontSize: font.size.base, lineHeight: lineHeightFor(font.size.base), fontFamily: font.familySemiBold, textAlign: 'right', ...baseText },
   stepCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.md, gap: spacing.md },
   stepHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: spacing.sm },
   stepNumber: { width: 24, height: 24, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  stepNumberText: { fontSize: font.size.sm, fontFamily: font.familyBold },
-  stepTitle: { fontSize: font.size.md, fontFamily: font.familySemiBold },
+  stepNumberText: { fontSize: font.size.sm, fontFamily: font.familyBold, lineHeight: lineHeightFor(font.size.sm), ...baseText },
+  stepTitle: { fontSize: font.size.md, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.md), ...baseText },
   employeeCard: {
     minHeight: 64,
     flexDirection: 'row',
@@ -489,10 +498,10 @@ const s = StyleSheet.create({
     borderRadius: radius.md,
   },
   employeeAvatar: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  employeeInitials: { fontSize: font.size.md, fontFamily: font.familyBold },
+  employeeInitials: { fontSize: font.size.md, fontFamily: font.familyBold, lineHeight: lineHeightFor(font.size.md), ...baseText },
   employeeText: { flex: 1, gap: 2 },
-  employeeName: { flex: 1, textAlign: 'right', fontSize: font.size.base, fontFamily: font.familySemiBold },
-  employeeNumber: { textAlign: 'right', fontSize: font.size.xs, fontFamily: font.family },
+  employeeName: { flex: 1, textAlign: 'right', fontSize: font.size.base, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.base), ...baseText },
+  employeeNumber: { textAlign: 'right', fontSize: font.size.xs, fontFamily: font.family, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   typeOption: {
     width: '48%',
@@ -507,30 +516,31 @@ const s = StyleSheet.create({
     position: 'relative',
   },
   typeIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  typeName: { flex: 1, textAlign: 'right', fontSize: font.size.sm, lineHeight: 19, fontFamily: font.familyMedium },
+  typeName: { flex: 1, textAlign: 'right', fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.familyMedium, ...baseText },
   selectedCheck: { position: 'absolute', top: spacing.xs, right: spacing.xs, width: 18, height: 18, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xl },
   stepperButton: { width: 44, height: 44, borderWidth: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  daysNumber: { minWidth: 48, textAlign: 'center', fontSize: 28, lineHeight: 36, fontFamily: font.familyBold },
+  daysNumber: { minWidth: 48, textAlign: 'center', fontSize: 28, lineHeight: lineHeightFor(28), fontFamily: font.familyBold, ...baseText },
   daysHintRow: { alignItems: 'center', gap: spacing.sm },
-  daysHint: { fontSize: font.size.sm, fontFamily: font.family, textAlign: 'center' },
+  daysHint: { fontSize: font.size.sm, fontFamily: font.family, textAlign: 'center', lineHeight: lineHeightFor(font.size.sm), ...baseText },
   reviewChip: { minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.pill },
-  reviewText: { fontSize: font.size.xs, fontFamily: font.familySemiBold },
+  reviewText: { fontSize: font.size.xs, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   textarea: {
     minHeight: 120,
     padding: spacing.md,
     borderRadius: radius.md,
     fontSize: font.size.base,
-    lineHeight: 24,
+    lineHeight: lineHeightFor(font.size.base),
     fontFamily: font.family,
+    ...baseText,
   },
   reasonMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  note: { flex: 1, fontSize: font.size.xs, fontFamily: font.family, textAlign: 'right' },
-  counter: { fontSize: font.size.xs, fontFamily: font.family },
+  note: { flex: 1, fontSize: font.size.xs, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.xs), ...baseText },
+  counter: { fontSize: font.size.xs, fontFamily: font.family, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md },
-  errorText: { flex: 1, fontSize: font.size.sm, fontFamily: font.family, textAlign: 'right' },
+  errorText: { flex: 1, fontSize: font.size.sm, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.sm), ...baseText },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, gap: spacing.sm },
-  footerHint: { textAlign: 'center', fontSize: font.size.xs, fontFamily: font.family },
+  footerHint: { textAlign: 'center', fontSize: font.size.xs, fontFamily: font.family, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   toast: {
     position: 'absolute',
     top: spacing.xl,
@@ -545,5 +555,5 @@ const s = StyleSheet.create({
     borderRadius: radius.pill,
     zIndex: 1100,
   },
-  toastText: { fontSize: font.size.sm, fontFamily: font.familySemiBold },
+  toastText: { fontSize: font.size.sm, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.sm), ...baseText },
 })

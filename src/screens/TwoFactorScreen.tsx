@@ -11,7 +11,8 @@ import {
 import { Banner, Card, GradientButton } from '../components/ui'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
+import { font, MIN_TOUCH, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t } from '../i18n'
 
 export default function TwoFactorScreen({
   username,
@@ -51,18 +52,18 @@ export default function TwoFactorScreen({
         <Card style={s.card}>
           <View style={s.head}>
             <View style={[s.pill, { backgroundColor: colors.tintBrand, borderColor: colors.brand }]}>
-              <Text style={[s.pillText, { color: colors.brandText }]}>التحقق بخطوتين</Text>
+              <Text style={[s.pillText, { color: colors.brandText }]}>{t("common.twoFactor")}</Text>
             </View>
-            <Text style={[s.title, { color: colors.textPrimary }]}>أدخل رمز التحقق</Text>
+            <Text style={[s.title, { color: colors.textPrimary }]}>{t("common.twoFactorTitle")}</Text>
             <Text style={[s.sub, { color: colors.textMuted }]}>
               {useBackup
-                ? `اكتب أحد الرموز الاحتياطية لحساب ${username}. يُستخدم مرة واحدة فقط.`
-                : `افتح تطبيق المصادقة وأدخل الرمز المكوَّن من 6 أرقام لحساب ${username}.`}
+                ? t("common.twoFactorSubBackup", { username })
+                : t("common.twoFactorSubTotp", { username })}
             </Text>
           </View>
 
           <View style={s.field}>
-            <Text style={[s.label, { color: colors.textSecondary }]}>{useBackup ? 'الرمز الاحتياطي' : 'رمز التحقق'}</Text>
+            <Text style={[s.label, { color: colors.textSecondary }]}>{useBackup ? t("common.backupCode") : t("common.totpCode")}</Text>
             <TextInput
               style={[s.input, { backgroundColor: colors.inputBg, color: colors.inputText }, useBackup && s.inputBackup]}
               value={code}
@@ -73,7 +74,7 @@ export default function TwoFactorScreen({
               autoCorrect={false}
               autoFocus
               editable={!busy}
-              accessibilityLabel={useBackup ? 'الرمز الاحتياطي' : 'رمز التحقق'}
+              accessibilityLabel={useBackup ? t("common.backupCode") : t("common.totpCode")}
               placeholder={useBackup ? '' : '••••••'}
               placeholderTextColor={colors.inputPlaceholder}
               onSubmitEditing={() => {
@@ -88,7 +89,7 @@ export default function TwoFactorScreen({
           {error ? <Banner tone="error">{error}</Banner> : null}
 
           <GradientButton
-            label="تحقق"
+            label={t("common.verify")}
             busy={busy}
             disabled={!ready}
             onPress={() => onSubmit({ code: trimmed, kind: useBackup ? 'backup' : 'totp' })}
@@ -101,7 +102,7 @@ export default function TwoFactorScreen({
             style={s.toggle}
           >
             <Text style={[s.toggleText, { color: colors.brandText }]}>
-              {useBackup ? 'استخدم رمز التطبيق' : 'استخدم رمزًا احتياطيًا'}
+              {useBackup ? t("common.useAppCode") : t("common.useBackupCode")}
             </Text>
           </Pressable>
 
@@ -111,7 +112,7 @@ export default function TwoFactorScreen({
             accessibilityRole="button"
             style={s.toggle}
           >
-            <Text style={[s.backText, { color: colors.textMuted }]}>رجوع لتعديل بيانات الدخول</Text>
+            <Text style={[s.backText, { color: colors.textMuted }]}>{t("common.backToLogin")}</Text>
           </Pressable>
         </Card>
       </ScrollView>
@@ -132,24 +133,30 @@ const s = StyleSheet.create({
   },
   pillText: {
     fontSize: 10,
-    letterSpacing: 1.4,
     fontFamily: font.familySemiBold,
+    lineHeight: lineHeightFor(10),
+    ...baseText,
   },
   title: {
     fontSize: 22,
     fontFamily: font.familyBold,
+    lineHeight: lineHeightFor(22),
+    ...baseText,
   },
   sub: {
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
   field: { gap: spacing.sm },
   label: {
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
   },
   input: {
     minHeight: MIN_TOUCH,
@@ -157,22 +164,28 @@ const s = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 11,
     fontSize: 24,
-    letterSpacing: 8,
     textAlign: 'center',
     fontFamily: font.familyBold,
+    lineHeight: lineHeightFor(24),
+    ...baseText,
   },
   inputBackup: {
     fontSize: font.size.xl,
-    letterSpacing: 1,
     fontFamily: font.familyMedium,
+    lineHeight: lineHeightFor(font.size.xl),
+    ...baseText,
   },
   toggle: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
   toggleText: {
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
   backText: {
     fontSize: font.size.md,
     fontFamily: font.family,
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
   },
 })

@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { t } from '../i18n'
 import type { ThemeColors } from '../theme/tokens'
 
 export interface RequestTypeAppearance {
@@ -9,14 +10,14 @@ export interface RequestTypeAppearance {
 }
 
 const requestTypes: Record<string, { label: string; icon: string; color: keyof ThemeColors }> = {
-  leave: { label: 'إجازة', icon: 'palm-tree', color: 'brandText' },
-  loan: { label: 'سلفة', icon: 'cash-fast', color: 'warningText' },
-  advance: { label: 'سلفة', icon: 'cash-fast', color: 'warningText' },
-  mission: { label: 'إذن انصراف', icon: 'clock-out', color: 'infoText' },
-  permission: { label: 'إذن انصراف', icon: 'clock-out', color: 'infoText' },
-  penalty: { label: 'جزاء', icon: 'gavel', color: 'crimson' },
-  repeated_lateness: { label: 'تأخير متكرر', icon: 'clock-alert-outline', color: 'crimson' },
-  'repeated-lateness': { label: 'تأخير متكرر', icon: 'clock-alert-outline', color: 'crimson' },
+  leave: { label: t('requests.leave'), icon: 'palm-tree', color: 'brandText' },
+  loan: { label: t('requests.loan'), icon: 'cash-fast', color: 'warningText' },
+  advance: { label: t('requests.loan'), icon: 'cash-fast', color: 'warningText' },
+  mission: { label: t('requests.mission'), icon: 'clock-out', color: 'infoText' },
+  permission: { label: t('requests.mission'), icon: 'clock-out', color: 'infoText' },
+  penalty: { label: t('requests.penalty'), icon: 'gavel', color: 'crimson' },
+  repeated_lateness: { label: t('requests.repeatedLateness'), icon: 'clock-alert-outline', color: 'crimson' },
+  'repeated-lateness': { label: t('requests.repeatedLateness'), icon: 'clock-alert-outline', color: 'crimson' },
 }
 
 const FALLBACK_ICON = 'file-document-outline'
@@ -40,7 +41,7 @@ export function getRequestTypeAppearance(type: string, colors: ThemeColors): Req
   const color = definition ? colors[definition.color] : colors.textMuted
 
   return {
-    label: definition?.label ?? 'طلب',
+    label: definition?.label ?? t('requests.item'),
     icon: safeIcon,
     color,
     tintBg: colorWithOpacity(color, 0.15),

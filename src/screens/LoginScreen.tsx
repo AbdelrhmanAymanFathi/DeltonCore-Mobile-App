@@ -19,7 +19,8 @@ import { Icon } from '../components/Icon'
 import { Button } from '../components/ui'
 import { PressableScale } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, radius, spacing } from '../theme/tokens'
+import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t } from '../i18n'
 import CompanyPickerScreen from './CompanyPickerScreen'
 import TwoFactorScreen from './TwoFactorScreen'
 
@@ -92,8 +93,8 @@ export default function LoginScreen() {
   async function submitCredentials() {
     if (busy) return
     const nextFieldErrors = {
-      username: username.trim().length === 0 ? 'أدخل اسم المستخدم.' : undefined,
-      password: password.length === 0 ? 'أدخل كلمة المرور.' : undefined,
+      username: username.trim().length === 0 ? t("login.usernameRequired") : undefined,
+      password: password.length === 0 ? t("login.passwordRequired") : undefined,
     }
     setFieldErrors(nextFieldErrors)
     if (nextFieldErrors.username || nextFieldErrors.password) return
@@ -229,14 +230,14 @@ export default function LoginScreen() {
                   resizeMode="contain"
                 />
               </View>
-              <Text style={[styles.title, { color: colors.textPrimary }]}>مشرفو دلتون</Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>سجّل الدخول للمتابعة</Text>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>{t("login.title")}</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t("login.subtitle")}</Text>
             </View>
 
             <View style={styles.fields}>
               <View style={styles.field}>
                 <View style={styles.labelWrap}>
-                  <Text style={[styles.label, { color: colors.textSecondary }]}>اسم المستخدم</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>{t("login.usernameLabel")}</Text>
                 </View>
                 <Animated.View style={focusRing(usernameFocus)}>
                   <Animated.View
@@ -279,13 +280,13 @@ export default function LoginScreen() {
                       autoComplete="username"
                       textContentType="username"
                       returnKeyType="next"
-                      placeholder="اسم المستخدم"
+                      placeholder={t("login.usernamePlaceholder")}
                       placeholderTextColor={colors.textMuted}
                       editable={!busy}
                       onFocus={() => setFocusedField('username')}
                       onBlur={() => setFocusedField(null)}
                       onSubmitEditing={() => passwordInput.current?.focus()}
-                      accessibilityLabel="اسم المستخدم"
+                      accessibilityLabel={t("login.usernameLabel")}
                     />
                   </Animated.View>
                 </Animated.View>
@@ -294,7 +295,7 @@ export default function LoginScreen() {
 
               <View style={styles.field}>
                 <View style={styles.labelWrap}>
-                  <Text style={[styles.label, { color: colors.textSecondary }]}>كلمة المرور</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>{t("login.passwordLabel")}</Text>
                 </View>
                 <Animated.View style={focusRing(passwordFocus)}>
                   <Animated.View
@@ -337,18 +338,18 @@ export default function LoginScreen() {
                       autoComplete="password"
                       textContentType="password"
                       returnKeyType="done"
-                      placeholder="كلمة المرور"
+                      placeholder={t("login.passwordPlaceholder")}
                       placeholderTextColor={colors.textMuted}
                       editable={!busy}
                       onFocus={() => setFocusedField('password')}
                       onBlur={() => setFocusedField(null)}
                       onSubmitEditing={submitCredentials}
-                      accessibilityLabel="كلمة المرور"
+                      accessibilityLabel={t("login.passwordLabel")}
                     />
                     <PressableScale
                       onPress={() => setShowPassword((value) => !value)}
                       disabled={busy}
-                      accessibilityLabel="إظهار كلمة المرور"
+                      accessibilityLabel={t("login.showPassword")}
                       accessibilityState={{ selected: showPassword }}
                       hitSlop={4}
                       style={styles.eyeButton}
@@ -379,8 +380,8 @@ export default function LoginScreen() {
             </View>
           ) : null}
           <Button
-            label="تسجيل الدخول"
-            busyLabel="جارٍ الدخول…"
+            label={t("login.signIn")}
+            busyLabel={t("login.signingIn")}
             onPress={submitCredentials}
             busy={busy}
             disabled={!canSubmit}
@@ -404,22 +405,22 @@ export default function LoginScreen() {
         <View style={styles.helpList}>
           <HelpLine
             icon="shield"
-            text="الدخول متاح لمن لديه صلاحية اعتماد أو تسجيل حضور."
+            text={t("login.helpAccess")}
             colors={colors}
           />
           <HelpLine
             icon="info"
-            text="الحساب المقفّل أو منتهي كلمة السر يُرفض من أول محاولة."
+            text={t("login.helpLocked")}
             colors={colors}
           />
         </View>
         <View style={styles.footer}>
           <View style={styles.footerSide}>
             <Icon name="lock" size={12} color={colors.textMuted} accessible={false} />
-            <Text style={[styles.footerArabic, { color: colors.textMuted }]}>اتصال مؤمَّن</Text>
+            <Text style={[styles.footerArabic, { color: colors.textMuted }]}>{t("login.secureConnection")}</Text>
           </View>
           <View style={[styles.footerDot, { backgroundColor: colors.textMuted }]} />
-          <Text style={[styles.footerEnglish, { color: colors.textMuted }]}>© 2026 Delton Core</Text>
+          <Text style={[styles.footerEnglish, { color: colors.textMuted }]}>{t("login.copyright", { year: 2026 })}</Text>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -496,12 +497,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   logo: { width: 76, height: 76 },
-  title: { fontSize: 28, lineHeight: 36, fontFamily: font.familyBold, textAlign: 'center' },
-  subtitle: { fontSize: 15, lineHeight: 22, fontFamily: font.family, textAlign: 'center' },
+  title: { fontSize: 28, lineHeight: lineHeightFor(28), fontFamily: font.familyBold, textAlign: 'center', ...baseText },
+  subtitle: { fontSize: 15, lineHeight: lineHeightFor(15), fontFamily: font.family, textAlign: 'center', ...baseText },
   fields: { gap: spacing.lg, marginTop: spacing.xl },
   field: { gap: spacing.sm },
   labelWrap: { width: '100%', direction: 'ltr', alignItems: 'flex-end' },
-  label: { width: '100%', fontSize: 13, lineHeight: 19, fontFamily: font.familySemiBold, textAlign: 'right' },
+  label: { width: '100%', fontSize: 13, lineHeight: lineHeightFor(13), fontFamily: font.familySemiBold, textAlign: 'right', ...baseText },
   fieldOuter: { borderRadius: radius.lg, padding: 2 },
   inputRow: {
     height: 56,
@@ -521,15 +522,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
     padding: 0,
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: lineHeightFor(16),
     fontFamily: font.family,
     textAlign: 'right',
-    includeFontPadding: false,
+    ...baseText,
   },
   eyeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   fieldErrorSlot: { height: 18, justifyContent: 'center' },
   fieldError: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, direction: 'rtl' },
-  fieldErrorText: { fontSize: font.size.xs, lineHeight: 18, fontFamily: font.family },
+  fieldErrorText: { fontSize: font.size.xs, lineHeight: lineHeightFor(font.size.xs), fontFamily: font.family, ...baseText },
   submitArea: { gap: spacing.xs },
   errorSlot: { minHeight: 0, justifyContent: 'center' },
   errorBanner: {
@@ -542,15 +543,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.md,
   },
-  errorText: { flex: 1, fontSize: font.size.sm, lineHeight: 20, fontFamily: font.family, textAlign: 'right' },
+  errorText: { flex: 1, fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.family, textAlign: 'right', ...baseText },
   helpList: { gap: spacing.md },
   helpRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, direction: 'rtl' },
   helpIcon: { width: 30, height: 30, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  helpText: { flex: 1, fontSize: font.size.sm, lineHeight: 18, fontFamily: font.family, textAlign: 'right' },
+  helpText: { flex: 1, fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.family, textAlign: 'right', ...baseText },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.sm },
   footerWrap: { width: '100%', maxWidth: 420, alignSelf: 'center', paddingHorizontal: 24, paddingTop: spacing.md, gap: spacing.md },
   footerSide: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  footerArabic: { fontSize: 11, lineHeight: 16, fontFamily: font.family },
+  footerArabic: { fontSize: 11, lineHeight: lineHeightFor(11), fontFamily: font.family, ...baseText },
   footerDot: { width: 3, height: 3, borderRadius: radius.pill },
-  footerEnglish: { fontSize: 11, lineHeight: 16, fontFamily: font.family, writingDirection: 'ltr', textAlign: 'center' },
+  footerEnglish: { fontSize: 11, lineHeight: lineHeightFor(11), fontFamily: font.family, writingDirection: 'ltr', textAlign: 'center', ...baseText },
 })

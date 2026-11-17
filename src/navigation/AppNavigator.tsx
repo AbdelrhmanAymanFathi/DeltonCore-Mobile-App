@@ -12,7 +12,8 @@ import { useBadge } from '../hooks/useBadge'
 import { Icon } from '../components/Icon'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, radius, spacing } from '../theme/tokens'
+import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t, formatNumber } from '../i18n'
 
 type Tab = 'home' | 'inbox' | 'employees'
 type Pushed =
@@ -56,10 +57,10 @@ export default function AppNavigator() {
 
   const closePushed = useCallback(() => {
     if (dirtyRef.current) {
-      Alert.alert('تجاهل التغييرات؟', 'لديك بيانات لم تُحفظ. الخروج الآن يعني فقدانها.', [
-        { text: 'متابعة التحرير', style: 'cancel' },
+      Alert.alert(t("nav.discardTitle"), t("nav.discardBody"), [
+        { text: t("nav.discardKeep"), style: 'cancel' },
         {
-          text: 'خروج دون حفظ',
+          text: t("nav.discardLeave"),
           style: 'destructive',
           onPress: () => {
             dirtyRef.current = false
@@ -173,7 +174,7 @@ export default function AppNavigator() {
         },
       ]}>
         <TabButton
-          label="الرئيسية"
+          label={t("nav.home")}
           active={tab === 'home'}
           icon="home"
           onPress={() => switchTab('home')}
@@ -182,7 +183,7 @@ export default function AppNavigator() {
         />
         {canApprove ? (
           <TabButton
-            label="الطلبات"
+            label={t("nav.requests")}
             active={tab === 'inbox'}
             icon="inbox"
             badge={pending}
@@ -192,7 +193,7 @@ export default function AppNavigator() {
           />
         ) : null}
         <TabButton
-          label="الموظفين"
+          label={t("nav.employees")}
           active={tab === 'employees'}
           icon="users"
           onPress={() => switchTab('employees')}
@@ -249,7 +250,7 @@ function TabButton({
       onPress={onPress}
       accessibilityRole="tab"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={showBadge ? `${label}، ${badge} بانتظار قرارك` : label}
+      accessibilityLabel={showBadge ? t("nav.badgeA11y", { label, count: formatNumber(badge) }) : label}
       hitSlop={8}
       style={s.tab}
     >
@@ -343,6 +344,8 @@ const s = StyleSheet.create({
     fontSize: 11,
     fontFamily: font.familyBold,
     textAlign: 'center',
+    lineHeight: lineHeightFor(11),
+    ...baseText,
   },
   tabLabelRow: {
     flexDirection: 'column',
@@ -353,5 +356,7 @@ const s = StyleSheet.create({
   tabLabelBase: {
     fontSize: font.size.sm,
     textAlign: 'center',
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
 })

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import * as Location from 'expo-location'
+import { t } from '../i18n'
 
 /**
  * Getting a location fix good enough to stake attendance on.
@@ -43,15 +44,15 @@ export interface LocationState {
 export function messageForLocationFailure(f: LocationFailure): string {
   switch (f) {
     case 'permission_denied':
-      return 'التطبيق يحتاج إذن الوصول للموقع لتسجيل الحضور. فعّله من إعدادات الجهاز.'
+      return t('errors.locationPermission')
     case 'services_off':
-      return 'خدمة تحديد الموقع مغلقة في الجهاز. شغّلها وحاول مرة أخرى.'
+      return t('errors.locationServicesOff')
     case 'timeout':
-      return 'تعذّر تحديد موقعك. اخرج إلى مكان مكشوف وحاول مرة أخرى.'
+      return t('errors.locationTimeout')
     case 'stale':
-      return 'قراءة الموقع قديمة. انتظر لحظة وحاول مرة أخرى.'
+      return t('errors.locationStale')
     case 'mocked':
-      return 'تم رصد تطبيق لتزييف الموقع على هذا الجهاز. أوقفه لتسجيل الحضور.'
+      return t('errors.locationMocked')
   }
 }
 

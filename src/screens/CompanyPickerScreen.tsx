@@ -9,7 +9,8 @@ import type { CompanyCard } from '../api/types'
 import { Banner } from '../components/ui'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
+import { font, MIN_TOUCH, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t } from '../i18n'
 
 export default function CompanyPickerScreen({
   companies,
@@ -32,9 +33,9 @@ export default function CompanyPickerScreen({
       showsVerticalScrollIndicator={false}
     >
       <View style={s.head}>
-        <Text style={[s.title, { color: colors.textPrimary }]}>اختر الشركة</Text>
+        <Text style={[s.title, { color: colors.textPrimary }]}>{t("common.chooseCompany")}</Text>
         <Text style={[s.sub, { color: colors.textSecondary }]}>
-          حسابك مرتبط بأكثر من شركة. اختر الشركة التي تريد العمل عليها الآن.
+          {t("common.multiCompany")}
         </Text>
       </View>
 
@@ -82,7 +83,7 @@ export default function CompanyPickerScreen({
         accessibilityRole="button"
         style={s.back}
       >
-        <Text style={[s.backText, { color: colors.textMuted }]}>رجوع لتعديل بيانات الدخول</Text>
+        <Text style={[s.backText, { color: colors.textMuted }]}>{t("common.backToLogin")}</Text>
       </Pressable>
     </ScrollView>
   )
@@ -94,12 +95,15 @@ const s = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: font.familyBold,
+    lineHeight: lineHeightFor(24),
+    ...baseText,
   },
   sub: {
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
   list: { gap: spacing.md },
   row: {
@@ -123,20 +127,27 @@ const s = StyleSheet.create({
     fontSize: font.size.xl,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.xl),
+    ...baseText,
   },
   meta: {
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.sm),
+    ...baseText,
   },
   chevron: {
     fontSize: 26,
-    lineHeight: 30,
+    lineHeight: lineHeightFor(26),
     fontFamily: font.family,
+    ...baseText,
   },
   back: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
   backText: {
     fontSize: font.size.md,
     fontFamily: font.family,
+    lineHeight: lineHeightFor(font.size.md),
+    ...baseText,
   },
 })

@@ -6,7 +6,7 @@ describe('request type appearances', () => {
   it.each([
     ['leave', 'إجازة', 'palm-tree', lightColors.brandText],
     ['advance', 'سلفة', 'cash-fast', lightColors.warningText],
-    ['permission', 'إذن انصراف', 'clock-out', lightColors.infoText],
+    ['permission', 'إذن', 'clock-out', lightColors.infoText],
     ['penalty', 'جزاء', 'gavel', lightColors.crimson],
     ['repeated_lateness', 'تأخير متكرر', 'clock-alert-outline', lightColors.crimson],
   ])('maps %s to a verified themed icon', (type, label, icon, color) => {

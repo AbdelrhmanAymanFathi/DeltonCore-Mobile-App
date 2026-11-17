@@ -3,6 +3,8 @@
  * Dark / Light mode ready. No hex literals should appear in components.
  */
 
+import { t } from '../i18n'
+
 export type ThemeMode = 'system' | 'light' | 'dark'
 
 export interface ThemeColors {
@@ -154,6 +156,18 @@ export const font = {
   },
 } as const
 
+/** المسافة بين الأسطر الدنيا حسب المواصفات (حجم الخط × 1.55). */
+export function lineHeightFor(size: number): number {
+  return size * 1.55
+}
+
+/** الأسلوب الأساسي لكل نص عربي في التطبيق. */
+export const baseText = {
+  includeFontPadding: false,
+  maxFontSizeMultiplier: 1.3,
+  fontStyle: 'normal' as const,
+} as const
+
 export const MIN_TOUCH = 48
 
 export const iconSize = {
@@ -178,10 +192,10 @@ export const elevationLight = {
 
 /** Request type badges — keys match ApprovalRequest.request_type. */
 export const requestTypeBadge = {
-  leave: { bg: 'brand', fg: 'brandDeep', label: 'إجازة' },
-  loan: { bg: 'warning', fg: 'warning', label: 'سلفة' },
-  mission: { bg: 'info', fg: 'info', label: 'إذن' },
-  penalty: { bg: 'crimson', fg: 'crimson', label: 'جزاء' },
+  leave: { bg: 'brand', fg: 'brandDeep', label: t('requests.leave') },
+  loan: { bg: 'warning', fg: 'warning', label: t('requests.loan') },
+  mission: { bg: 'info', fg: 'info', label: t('requests.mission') },
+  penalty: { bg: 'crimson', fg: 'crimson', label: t('requests.penalty') },
 } as const
 
 /** Resolve a semantic color name to an actual hex from the active theme. */

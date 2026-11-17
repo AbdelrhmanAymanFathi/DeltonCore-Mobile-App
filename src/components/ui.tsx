@@ -16,10 +16,13 @@ import {
   radius,
   requestTypeBadge,
   spacing,
+  lineHeightFor,
+  baseText,
 } from '../theme/tokens'
 import type { RequestType } from '../api/types'
 import { Icon } from './Icon'
 import { PressableScale } from './ui/PressableScale'
+import { t } from '../i18n'
 
 type Tone = 'approve' | 'reject' | 'neutral'
 
@@ -128,7 +131,7 @@ export function Button({
               ]}
               numberOfLines={1}
             >
-              {success ? 'تم بنجاح' : title}
+              {success ? t("common.saved") : title}
             </Text>
             {!busy && !success && iconName ? (
               <Icon
@@ -167,7 +170,7 @@ export function GradientButton({
       busy={busy}
       disabled={disabled}
       iconName={iconName}
-      busyLabel="جارٍ التسجيل…"
+      busyLabel={t("home.punching")}
     />
   )
 }
@@ -231,7 +234,7 @@ export function ScreenHeader({
         <PressableScale
           onPress={onBack}
           accessibilityRole="button"
-          accessibilityLabel="رجوع"
+          accessibilityLabel={t("common.back")}
           hitSlop={10}
           style={{
             width: MIN_TOUCH - 12,
@@ -243,7 +246,7 @@ export function ScreenHeader({
           <Icon name="chevron-right" size={24} color={colors.textSecondary} accessible={false} />
         </PressableScale>
       ) : null}
-      <Text style={{ flex: 1, color: colors.textPrimary, fontSize: font.size.title, fontFamily: font.familySemiBold, textAlign: 'right' }} numberOfLines={1}>
+      <Text style={{ flex: 1, color: colors.textPrimary, fontSize: font.size.title, fontFamily: font.familySemiBold, textAlign: 'right', lineHeight: lineHeightFor(font.size.title), ...baseText }} numberOfLines={1}>
         {title}
       </Text>
       {right}
@@ -295,12 +298,12 @@ export function DetailRows({
             i < rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
           ]}
         >
-          <Text style={{ flex: 1, color: colors.textMuted, fontSize: font.size.md, fontFamily: font.family, textAlign: 'right' }}>
+          <Text style={{ flex: 1, color: colors.textMuted, fontSize: font.size.md, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.md), ...baseText }}>
             {r.label}
           </Text>
           <Text
             style={[
-              { flexShrink: 1, color: colors.textPrimary, fontSize: font.size.base, fontFamily: font.familyMedium, textAlign: 'left', maxWidth: '62%' },
+              { flexShrink: 1, color: colors.textPrimary, fontSize: font.size.base, fontFamily: font.familyMedium, textAlign: 'left', maxWidth: '62%', lineHeight: lineHeightFor(font.size.base), ...baseText },
               r.emphasis === 'good' && { color: colors.success },
               r.emphasis === 'bad' && { color: colors.crimson },
             ]}
@@ -320,7 +323,7 @@ export function TypeBadge({ type }: { type: RequestType }) {
   const fgKey = b.fg as keyof typeof colors
   return (
     <View style={{ paddingHorizontal: 9, paddingVertical: 3, borderRadius: radius.sm, backgroundColor: colors[bgKey] }}>
-      <Text style={{ color: colors[fgKey], fontSize: font.size.xs, fontFamily: font.familySemiBold }}>{b.label}</Text>
+      <Text style={{ color: colors[fgKey], fontSize: font.size.xs, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.xs), ...baseText }}>{b.label}</Text>
     </View>
   )
 }
@@ -344,7 +347,7 @@ export function Banner({
       { borderWidth: 1, borderColor: map.bd, borderRadius: radius.md, padding: spacing.md, backgroundColor: map.bg },
     ]}>
       <Icon name={iconMap[tone]} size={14} color={map.fg} accessible={false} />
-      <Text style={{ fontSize: 12.5, lineHeight: 21, fontFamily: font.family, textAlign: 'right', color: map.fg }}>{children}</Text>
+      <Text style={{ fontSize: 12.5, lineHeight: 21, fontFamily: font.family, textAlign: 'right', color: map.fg, ...baseText }}>{children}</Text>
     </View>
   )
 }
@@ -361,11 +364,11 @@ export function Field({
   const { colors } = useTheme()
   return (
     <View style={{ gap: spacing.sm }}>
-      <Text style={{ color: colors.textSecondary, fontSize: font.size.md, fontFamily: font.familySemiBold, textAlign: 'right' }}>
+      <Text style={{ color: colors.textSecondary, fontSize: font.size.md, fontFamily: font.familySemiBold, textAlign: 'right', lineHeight: lineHeightFor(font.size.md), ...baseText }}>
         {label}
       </Text>
       {children}
-      {hint ? <Text style={{ color: colors.textMuted, fontSize: font.size.sm, fontFamily: font.family, textAlign: 'right' }}>{hint}</Text> : null}
+      {hint ? <Text style={{ color: colors.textMuted, fontSize: font.size.sm, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.sm), ...baseText }}>{hint}</Text> : null}
     </View>
   )
 }
@@ -394,9 +397,9 @@ const buttonStyles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    lineHeight: 24,
-    includeFontPadding: false,
+    lineHeight: lineHeightFor(16),
     textAlignVertical: 'center',
+    ...baseText,
   },
 })
 

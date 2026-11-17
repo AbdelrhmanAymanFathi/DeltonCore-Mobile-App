@@ -5,7 +5,8 @@ import { useAuth } from '../auth/AuthContext'
 import { Card, ScreenHeader } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { useTheme } from '../theme/ThemeProvider'
-import { font, radius, spacing } from '../theme/tokens'
+import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
+import { t } from '../i18n'
 
 interface Props {
   onBack: () => void
@@ -15,21 +16,21 @@ export default function ProfileScreen({ onBack }: Props) {
   const { colors } = useTheme()
   const { session } = useAuth()
   const insets = useSafeAreaInsets()
-  const name = session?.employee.full_name_ar || session?.user.full_name || 'المستخدم'
+  const name = session?.employee.full_name_ar || session?.user.full_name || t('common.defaultName')
   const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('')
 
   const fields = [
-    { label: 'اسم المستخدم', value: session?.user.username, icon: 'user' },
-    { label: 'الرقم الوظيفي', value: session?.employee.employee_number, icon: 'hash' },
-    { label: 'المسمى الوظيفي', value: session?.employee.job_title, icon: 'briefcase' },
-    { label: 'القسم', value: session?.employee.department, icon: 'layers' },
-    { label: 'موقع العمل', value: session?.site?.name_ar, icon: 'map-pin' },
-    { label: 'الشركة', value: session?.company?.name_ar || session?.company?.name, icon: 'home' },
+    { label: t("login.usernameLabel"), value: session?.user.username, icon: 'user' },
+    { label: t("common.employeeNumber"), value: session?.employee.employee_number, icon: 'hash' },
+    { label: t("common.jobTitle"), value: session?.employee.job_title, icon: 'briefcase' },
+    { label: t("common.department"), value: session?.employee.department, icon: 'layers' },
+    { label: t("common.workSite"), value: session?.site?.name_ar, icon: 'map-pin' },
+    { label: t("common.company"), value: session?.company?.name_ar || session?.company?.name, icon: 'home' },
   ].filter((field): field is typeof field & { value: string } => Boolean(field.value))
 
   return (
     <View style={[s.screen, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="الملف الشخصي" onBack={onBack} />
+      <ScreenHeader title={t("home.profile")} onBack={onBack} />
       <ScrollView
         contentContainerStyle={[
           s.content,
@@ -43,12 +44,12 @@ export default function ProfileScreen({ onBack }: Props) {
           </View>
           <Text style={[s.name, { color: colors.textPrimary }]}>{name}</Text>
           <Text style={[s.subtitle, { color: colors.textSecondary }]}>
-            {session?.employee.job_title || 'بيانات الحساب'}
+            {session?.employee.job_title || t("common.accountData")}
           </Text>
         </Card>
 
         <Card style={s.detailsCard}>
-          <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>بيانات الحساب</Text>
+          <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t("common.accountData")}</Text>
           {fields.map((field) => (
             <View key={field.label} style={[s.field, { borderBottomColor: colors.border }]}>
               <View style={[s.fieldIcon, { backgroundColor: colors.tintBrand }]}>
@@ -88,16 +89,22 @@ const s = StyleSheet.create({
   initials: {
     fontSize: 26,
     fontFamily: font.familyBold,
+    lineHeight: lineHeightFor(26),
+    ...baseText,
   },
   name: {
     fontSize: font.size.title,
     fontFamily: font.familyBold,
     textAlign: 'center',
+    lineHeight: lineHeightFor(font.size.title),
+    ...baseText,
   },
   subtitle: {
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
   detailsCard: {
     padding: spacing.lg,
@@ -109,6 +116,8 @@ const s = StyleSheet.create({
     fontFamily: font.familySemiBold,
     textAlign: 'right',
     marginBottom: spacing.sm,
+    lineHeight: lineHeightFor(font.size.lg),
+    ...baseText,
   },
   field: {
     flexDirection: 'row',
@@ -137,6 +146,8 @@ const s = StyleSheet.create({
     fontSize: font.size.xs,
     fontFamily: font.family,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.xs),
+    ...baseText,
   },
   fieldValue: {
     width: '100%',
@@ -144,5 +155,7 @@ const s = StyleSheet.create({
     fontFamily: font.familySemiBold,
     textAlign: 'right',
     writingDirection: 'rtl',
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
   },
 })
