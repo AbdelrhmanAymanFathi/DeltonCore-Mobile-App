@@ -14,6 +14,7 @@ export interface ThemeColors {
   textSecondary: string
   textMuted: string
   brand: string
+  brandOutline: string
   brandLight: string
   brandDeep: string
   onBrand: string
@@ -28,6 +29,7 @@ export interface ThemeColors {
   info: string
   infoText: string
   tintBrand: string
+  brandGlow: string
   tintCrimson: string
   tintSuccess: string
   rippleBrand: string
@@ -48,6 +50,7 @@ export const lightColors: ThemeColors = {
   textSecondary: '#5E6068',
   textMuted: '#6C6E75',
   brand: '#D4A24C',
+  brandOutline: 'rgba(169,118,30,0.40)',
   brandLight: '#F0CB74',
   brandDeep: '#A9761E',
   onBrand: '#1A1306',
@@ -62,6 +65,7 @@ export const lightColors: ThemeColors = {
   info: '#3B6FB0',
   infoText: '#2E5D99',
   tintBrand: 'rgba(212,162,76,0.16)',
+  brandGlow: 'rgba(212,162,76,0.14)',
   tintCrimson: 'rgba(200,16,46,0.08)',
   tintSuccess: 'rgba(15,159,110,0.10)',
   rippleBrand: 'rgba(212,162,76,0.20)',
@@ -82,6 +86,7 @@ export const darkColors: ThemeColors = {
   textSecondary: '#A8A59C',
   textMuted: '#AAA79F',
   brand: '#D4A24C',
+  brandOutline: 'rgba(212,162,76,0.40)',
   brandLight: '#F0CB74',
   brandDeep: '#A9761E',
   onBrand: '#1A1306',
@@ -97,6 +102,7 @@ export const darkColors: ThemeColors = {
   info: '#7DA7D9',
   infoText: '#7DA7D9',
   tintBrand: 'rgba(212,162,76,0.12)',
+  brandGlow: 'rgba(212,162,76,0.10)',
   tintCrimson: 'rgba(229,72,77,0.12)',
   tintSuccess: 'rgba(52,211,153,0.12)',
   pressOverlay: 'rgba(255,255,255,0.10)',

@@ -42,6 +42,7 @@ interface Props {
   onOpenInbox: () => void
   onOpenPenalty: () => void
   onOpenEmployees: () => void
+  onOpenProfile: () => void
   onCompanyChanged: () => void
 }
 
@@ -58,6 +59,7 @@ export default function HomeScreen({
   onOpenInbox,
   onOpenPenalty,
   onOpenEmployees,
+  onOpenProfile,
   onCompanyChanged,
 }: Props) {
   const { colors, gradients, setMode, mode } = useTheme()
@@ -443,97 +445,6 @@ export default function HomeScreen({
         </Pressable>
       </View>
 
-      {accountMenuOpen ? (
-        <Pressable
-          style={[s.popupBackdrop, { backgroundColor: colors.scrim }]}
-          onPress={closeAccountMenu}
-          accessibilityRole="button"
-          accessibilityLabel="إغلاق القائمة"
-        >
-          <Animated.View
-            style={[
-              s.popup,
-              { right: spacing.sm, top: insets.top + 72 + spacing.sm, backgroundColor: colors.surfaceElevated, borderColor: colors.border, shadowColor: colors.background, shadowOpacity: 0.25 },
-              {
-                opacity: popupAnim,
-                transform: [
-                  {
-                    scale: popupAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.95, 1],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <View style={s.popupHeader}>
-              <Text style={[s.popupName, { color: colors.textPrimary }]}>{userName}</Text>
-              <Text style={[s.popupRole, { color: colors.textMuted }]}>{session?.site?.name_ar || ''}</Text>
-            </View>
-            <View style={[s.popupDivider, { backgroundColor: colors.border }]} />
-
-            <View style={s.popupSection}>
-              <Text style={[s.popupSectionTitle, { color: colors.textSecondary }]}>المظهر</Text>
-              <View
-                style={[s.segmentedControl, { backgroundColor: colors.surface }]}
-                onLayout={(event) => setSegmentedWidth(event.nativeEvent.layout.width)}
-              >
-                <Animated.View
-                  pointerEvents="none"
-                  style={[
-                    s.segmentIndicator,
-                    {
-                      width: segmentedWidth / 3,
-                      right: segmentedAnim.interpolate({
-                        inputRange: [0, 1, 2],
-                        outputRange: [0, segmentedWidth / 3, (segmentedWidth * 2) / 3],
-                      }),
-                      backgroundColor: colors.brand,
-                    },
-                  ]}
-                />
-                <Pressable
-                  onPress={() => setAppearance('system')}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: mode === 'system' }}
-                  style={s.segmentItem}
-                >
-                  <Text style={[s.segmentText, { color: mode === 'system' ? colors.onBrand : colors.textSecondary }]}>تلقائي</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setAppearance('light')}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: mode === 'light' }}
-                  style={s.segmentItem}
-                >
-                  <Text style={[s.segmentText, { color: mode === 'light' ? colors.onBrand : colors.textSecondary }]}>فاتح</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setAppearance('dark')}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: mode === 'dark' }}
-                  style={s.segmentItem}
-                >
-                  <Text style={[s.segmentText, { color: mode === 'dark' ? colors.onBrand : colors.textSecondary }]}>داكن</Text>
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={[s.popupDivider, { backgroundColor: colors.border }]} />
-            <Pressable
-              onPress={handleLogoutPress}
-              accessibilityRole="button"
-              accessibilityLabel="تسجيل الخروج"
-              style={({ pressed }) => [s.popupItem, { backgroundColor: pressed ? colors.tintCrimson : 'transparent' }]}
-            >
-              <Icon name="log-out" size={16} color={colors.crimson} accessible={false} />
-              <Text style={[s.popupItemText, { color: colors.crimson }]}>تسجيل الخروج</Text>
-            </Pressable>
-          </Animated.View>
-        </Pressable>
-      ) : null}
-
       <View style={s.body}>
         {passwordWarn ? (
           <Banner tone="warn">
@@ -714,6 +625,117 @@ export default function HomeScreen({
         </Animated.View>
       </View>
     </ScrollView>
+
+    {accountMenuOpen ? (
+      <View
+        style={[s.popupBackdrop, { backgroundColor: colors.scrim }]}
+      >
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={closeAccountMenu}
+          accessibilityRole="button"
+          accessibilityLabel="إغلاق القائمة"
+        />
+        <Animated.View
+          style={[
+            s.popup,
+            { right: spacing.sm, top: insets.top + 72 + spacing.sm, backgroundColor: colors.surfaceElevated, borderColor: colors.border, shadowColor: colors.background, shadowOpacity: 0.25 },
+            {
+              opacity: popupAnim,
+              transform: [
+                {
+                  scale: popupAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.95, 1],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={s.popupHeader}>
+            <Text style={[s.popupName, { color: colors.textPrimary }]}>{userName}</Text>
+            <Text style={[s.popupRole, { color: colors.textMuted }]}>{session?.site?.name_ar || ''}</Text>
+          </View>
+          <View style={[s.popupDivider, { backgroundColor: colors.border }]} />
+
+          <View style={s.popupSection}>
+            <Text style={[s.popupSectionTitle, { color: colors.textSecondary }]}>المظهر</Text>
+            <View
+              style={[s.segmentedControl, { backgroundColor: colors.surface }]}
+              onLayout={(event) => setSegmentedWidth(event.nativeEvent.layout.width)}
+            >
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  s.segmentIndicator,
+                  {
+                    right: segmentedAnim.interpolate({
+                      inputRange: [0, 1, 2],
+                      outputRange: [0, segmentedWidth / 3, (segmentedWidth * 2) / 3],
+                    }),
+                    width: segmentedWidth / 3,
+                    backgroundColor: colors.brand,
+                  },
+                ]}
+              />
+              <Pressable
+                onPress={() => setAppearance('system')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: mode === 'system' }}
+                style={s.segmentItem}
+              >
+                <Text style={[s.segmentText, { color: mode === 'system' ? colors.onBrand : colors.textSecondary }]}>تلقائي</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setAppearance('light')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: mode === 'light' }}
+                style={s.segmentItem}
+              >
+                <Text style={[s.segmentText, { color: mode === 'light' ? colors.onBrand : colors.textSecondary }]}>فاتح</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setAppearance('dark')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: mode === 'dark' }}
+                style={s.segmentItem}
+              >
+                <Text style={[s.segmentText, { color: mode === 'dark' ? colors.onBrand : colors.textSecondary }]}>داكن</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={[s.popupDivider, { backgroundColor: colors.border }]} />
+          <Pressable
+            onPress={() => {
+              closeAccountMenu()
+              onOpenProfile()
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="الملف الشخصي"
+            style={({ pressed }) => [s.popupItem, { backgroundColor: pressed ? colors.tintBrand : 'transparent' }]}
+          >
+            <Text style={[s.popupActionText, { color: colors.textPrimary }]}>الملف الشخصي</Text>
+            <Icon name="user" size={18} color={colors.brandText} accessible={false} />
+          </Pressable>
+
+          <View style={[s.popupDivider, { backgroundColor: colors.border }]} />
+          <Pressable
+            onPress={handleLogoutPress}
+            accessibilityRole="button"
+            accessibilityLabel="تسجيل الخروج"
+            style={({ pressed }) => [s.popupItem, { backgroundColor: pressed ? colors.tintCrimson : 'transparent' }]}
+          >
+            <View style={s.popupItemLabelWrap}>
+              <Text style={[s.popupItemText, { color: colors.crimson }]}>تسجيل</Text>
+              <Text style={[s.popupItemText, { color: colors.crimson }]}>الخروج</Text>
+            </View>
+            <Icon name="log-out" size={16} color={colors.crimson} accessible={false} />
+          </Pressable>
+        </Animated.View>
+      </View>
+    ) : null}
     </View>
   )
 }
@@ -784,7 +806,8 @@ function timeNow(date: Date) {
   return date.toLocaleTimeString('ar-EG-u-nu-latn', {
     hour: '2-digit',
     minute: '2-digit',
-    hourCycle: 'h23',
+    hourCycle: 'h12',
+    dayPeriod: 'short',
   })
 }
 
@@ -793,6 +816,8 @@ function timeOf(iso: string | null) {
   return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', {
     hour: 'numeric',
     minute: '2-digit',
+    hourCycle: 'h12',
+    dayPeriod: 'short',
   })
 }
 
@@ -818,11 +843,13 @@ const s = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   notifLtr: { direction: 'ltr' },
-  headerText: { flex: 1, direction: 'rtl' },
+  headerText: { flex: 1, direction: 'ltr', alignItems: 'flex-end' },
   greeting: {
     fontSize: font.size.md,
     fontFamily: font.family,
     textAlign: 'right',
+    alignSelf: 'flex-end',
+    writingDirection: 'rtl',
   },
   siteRow: {
     flexDirection: 'row',
@@ -902,13 +929,16 @@ const s = StyleSheet.create({
   popupBackdrop: {
     position: 'absolute',
     inset: 0,
+    direction: 'ltr',
     zIndex: 100,
   },
   popup: {
     position: 'absolute',
     right: spacing.sm,
     top: 0,
-    minWidth: 240,
+    direction: 'rtl',
+    width: 280,
+    alignItems: 'stretch',
     borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.xs,
@@ -918,20 +948,27 @@ const s = StyleSheet.create({
     zIndex: 101,
   },
   popupHeader: {
+    width: '100%',
+    direction: 'ltr',
     padding: spacing.sm,
     gap: spacing.xs,
     alignSelf: 'stretch',
+    alignItems: 'flex-end',
   },
   popupName: {
+    width: '100%',
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    writingDirection: 'rtl',
     alignSelf: 'stretch',
   },
   popupRole: {
+    width: '100%',
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
+    writingDirection: 'rtl',
     alignSelf: 'stretch',
   },
   popupDivider: {
@@ -939,31 +976,56 @@ const s = StyleSheet.create({
     marginVertical: spacing.xs,
   },
   popupItem: {
+    width: '100%',
     flexDirection: 'row',
+    direction: 'ltr',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 10,
     padding: spacing.sm,
     borderRadius: radius.sm,
     minHeight: 48,
   },
+  popupItemLabelWrap: {
+    flexDirection: 'row',
+    direction: 'rtl',
+    justifyContent: 'flex-start',
+    gap: spacing.xs,
+    width: 180,
+    alignItems: 'center',
+  },
   popupItemText: {
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
+    flexShrink: 0,
+    writingDirection: 'rtl',
+  },
+  popupActionText: {
+    flex: 1,
+    fontSize: font.size.md,
+    fontFamily: font.familySemiBold,
     textAlign: 'right',
-    alignSelf: 'stretch',
-    flexShrink: 1,
+    writingDirection: 'rtl',
   },
   popupSection: {
+    width: '100%',
+    direction: 'ltr',
     paddingHorizontal: spacing.sm,
+    alignItems: 'flex-end',
   },
   popupSectionTitle: {
+    width: '100%',
     fontSize: font.size.sm,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    writingDirection: 'rtl',
+    alignSelf: 'stretch',
     marginBottom: spacing.xs,
   },
   segmentedControl: {
+    width: '100%',
     flexDirection: 'row',
+    direction: 'rtl',
     borderRadius: radius.md,
     overflow: 'hidden',
     height: 40,

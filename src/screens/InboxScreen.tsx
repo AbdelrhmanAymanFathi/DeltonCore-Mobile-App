@@ -45,6 +45,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [segmentWidth, setSegmentWidth] = useState(0)
   const segmentPosition = useRef(new Animated.Value(0)).current
+  const requestSequence = useRef(0)
 
   useEffect(() => {
     Animated.timing(segmentPosition, {
@@ -55,12 +56,14 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
   }, [segmentPosition, tab])
 
   const load = useCallback(async () => {
+    const requestId = ++requestSequence.current
     setError(null)
     try {
       const res = await api.inbox({
         status: tab,
         type: filter === 'all' ? undefined : filter,
       })
+      if (requestId !== requestSequence.current) return
       setRows(res.results)
       if (filter === 'all') {
         setAllRows(res.results)
@@ -68,7 +71,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
         if (tab === 'pending') setPendingCount(res.count)
       }
     } catch (e) {
-      setError(messageFor(e))
+      if (requestId === requestSequence.current) setError(messageFor(e))
     }
   }, [filter, tab])
 
@@ -107,7 +110,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
                 right: Animated.add(
                   segmentPosition.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0, (segmentWidth - spacing.xs * 2) / 2],
+                    outputRange: [(segmentWidth - spacing.xs * 2) / 2, 0],
                   }),
                   spacing.xs,
                 ),
@@ -121,13 +124,19 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
           label="منتظر قراري"
           badge={pendingCount > 0 ? pendingCount : undefined}
           active={tab === 'pending'}
-          onPress={() => setTab('pending')}
+          onPress={() => {
+            if (tab === 'pending') void onRefresh()
+            else setTab('pending')
+          }}
           colors={colors}
         />
         <Tab
           label="تم البت"
           active={tab === 'decided'}
-          onPress={() => setTab('decided')}
+          onPress={() => {
+            if (tab === 'decided') void onRefresh()
+            else setTab('decided')
+          }}
           colors={colors}
         />
       </View>
@@ -388,12 +397,14 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   tabBadgeText: { fontSize: font.size.xs, fontFamily: font.familyBold },
-  filterScroll: { flexGrow: 0 },
+  filterScroll: { flexGrow: 0, height: 60, direction: 'rtl' },
   filters: {
     flexDirection: 'row',
+    direction: 'rtl',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    alignItems: 'center',
   },
   chip: {
     height: 36,
@@ -407,7 +418,7 @@ const s = StyleSheet.create({
   },
   chipText: { fontSize: font.size.sm, fontFamily: font.familyMedium },
   chipCount: { fontSize: font.size.xs, fontFamily: font.familySemiBold },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs, gap: spacing.md },
+  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
   emptyList: { flexGrow: 1, justifyContent: 'center' },
   card: { borderWidth: 1, borderRadius: 20, padding: 14 },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, direction: 'rtl' },
@@ -423,8 +434,8 @@ const s = StyleSheet.create({
   typeBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill },
   typeBadgeText: { fontSize: font.size.xs, fontFamily: font.familySemiBold },
   detail: { alignSelf: 'stretch', textAlign: 'right', fontSize: font.size.md, lineHeight: 20, fontFamily: font.family },
-  cardMeta: { alignSelf: 'stretch', alignItems: 'center', justifyContent: 'space-between', minWidth: 54 },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  cardMeta: { width: 64, flexShrink: 0, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'space-between' },
+  dateRow: { width: '100%', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
   staleDot: { width: 7, height: 7, borderRadius: radius.pill },
   when: { fontSize: font.size.xs, fontFamily: font.family, textAlign: 'left' },
   skeletonCard: {

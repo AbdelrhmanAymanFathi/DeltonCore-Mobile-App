@@ -4,7 +4,7 @@
     "slug": "delton-core-supervisor",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/appicon.png",
     "scheme": "deltoncore",
     "splash": {
@@ -40,7 +40,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-system-ui"
     ],
     "extra": {
       "notes": {

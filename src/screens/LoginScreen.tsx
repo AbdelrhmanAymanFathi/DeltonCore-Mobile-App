@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
+  Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -8,28 +10,76 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthContext'
 import { api, ApiFailure, messageFor } from '../api/client'
 import type { CompanySelectionRequired, MobileLoginResult } from '../api/types'
+import { Icon } from '../components/Icon'
+import { Button } from '../components/ui'
+import { PressableScale } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing } from '../theme/tokens'
 import CompanyPickerScreen from './CompanyPickerScreen'
 import TwoFactorScreen from './TwoFactorScreen'
-import { Button } from '../components/ui'
 
 type Phase = 'credentials' | 'code' | 'company'
+type CredentialField = 'username' | 'password'
 
 export default function LoginScreen() {
-  const { colors } = useTheme()
+  const { colors, isDark } = useTheme()
   const { signIn, adoptSession } = useAuth()
+  const insets = useSafeAreaInsets()
   const [phase, setPhase] = useState<Phase>('credentials')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [focusedField, setFocusedField] = useState<CredentialField | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selection, setSelection] = useState<CompanySelectionRequired | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({})
+  const passwordInput = useRef<React.ElementRef<typeof TextInput>>(null)
+  const shake = useRef(new Animated.Value(0)).current
+  const usernameFocus = useRef(new Animated.Value(0)).current
+  const passwordFocus = useRef(new Animated.Value(0)).current
+  const previousError = useRef<string | null>(null)
 
   const canSubmit = username.trim().length > 0 && password.length > 0 && !busy
+  const usernameFocused = focusedField === 'username'
+  const passwordFocused = focusedField === 'password'
+
+  useEffect(() => {
+    if (!error || error === previousError.current) {
+      previousError.current = error
+      return
+    }
+    previousError.current = error
+    shake.setValue(0)
+    Animated.sequence([
+      Animated.timing(shake, { toValue: 1, duration: 60, useNativeDriver: true }),
+      Animated.timing(shake, { toValue: -1, duration: 60, useNativeDriver: true }),
+      Animated.timing(shake, { toValue: 0.8, duration: 60, useNativeDriver: true }),
+      Animated.timing(shake, { toValue: -0.8, duration: 60, useNativeDriver: true }),
+      Animated.timing(shake, { toValue: 0, duration: 60, useNativeDriver: true }),
+    ]).start()
+  }, [error, shake])
+
+  useEffect(() => {
+    Animated.timing(usernameFocus, {
+      toValue: usernameFocused ? 1 : 0,
+      duration: 150,
+      useNativeDriver: false,
+    }).start()
+  }, [usernameFocus, usernameFocused])
+
+  useEffect(() => {
+    Animated.timing(passwordFocus, {
+      toValue: passwordFocused ? 1 : 0,
+      duration: 150,
+      useNativeDriver: false,
+    }).start()
+  }, [passwordFocus, passwordFocused])
 
   function route(res: MobileLoginResult) {
     if ('company_required' in res && res.company_required) {
@@ -40,7 +90,14 @@ export default function LoginScreen() {
   }
 
   async function submitCredentials() {
-    if (!canSubmit) return
+    if (busy) return
+    const nextFieldErrors = {
+      username: username.trim().length === 0 ? 'أدخل اسم المستخدم.' : undefined,
+      password: password.length === 0 ? 'أدخل كلمة المرور.' : undefined,
+    }
+    setFieldErrors(nextFieldErrors)
+    if (nextFieldErrors.username || nextFieldErrors.password) return
+
     setBusy(true)
     setError(null)
     try {
@@ -124,147 +181,376 @@ export default function LoginScreen() {
     )
   }
 
+  const focusRing = (focusValue: Animated.Value) => [
+    styles.fieldOuter,
+    {
+      backgroundColor: focusValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['transparent', colors.tintBrand],
+      }),
+    },
+  ]
+
   return (
     <KeyboardAvoidingView
-      style={[s.flex, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.flex, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={insets.top}
     >
+      <LinearGradient
+        pointerEvents="none"
+        colors={[colors.brandGlow, 'transparent']}
+        style={styles.glow}
+      />
       <ScrollView
-        contentContainerStyle={s.scroll}
+        style={styles.loginScroll}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + spacing.lg, paddingBottom: Math.max(insets.bottom, spacing.lg) },
+        ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={[s.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={s.head}>
-            <View style={[s.pill, { backgroundColor: colors.tintBrand, borderColor: colors.brand }]}>
-              <Text style={[s.pillText, { color: colors.brandText }]}>ENTERPRISE HR SYSTEM</Text>
+        <View style={styles.content}>
+          <Animated.View
+            style={[
+              styles.form,
+              {
+                transform: [{ translateX: shake.interpolate({ inputRange: [-1, 1], outputRange: [-9, 9] }) }],
+              },
+            ]}
+          >
+            <View style={styles.brandHeader}>
+              <View style={[styles.logoFrame, { backgroundColor: colors.surface, borderColor: colors.brandOutline }]}>
+                <Image
+                  source={require('../../assets/appicon-foreground-removebg-preview.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+              </View>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>مشرفو دلتون</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>سجّل الدخول للمتابعة</Text>
             </View>
-            <Text style={[s.brand, { color: colors.textPrimary }]}>Delton Core People</Text>
-            <Text style={[s.sub, { color: colors.textSecondary }]}>تطبيق المشرفين — ادخل بحساب النظام</Text>
-          </View>
 
-          <View style={s.field}>
-            <Text style={[s.label, { color: colors.textSecondary }]}>اسم المستخدم</Text>
-            <TextInput
-              style={[s.input, { backgroundColor: colors.inputBg, color: colors.inputText }]}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="username"
-              placeholderTextColor={colors.inputPlaceholder}
-              editable={!busy}
-            />
-          </View>
+            <View style={styles.fields}>
+              <View style={styles.field}>
+                <View style={styles.labelWrap}>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>اسم المستخدم</Text>
+                </View>
+                <Animated.View style={focusRing(usernameFocus)}>
+                  <Animated.View
+                    style={[
+                      styles.inputRow,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: fieldErrors.username
+                          ? colors.crimson
+                          : usernameFocus.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [colors.border, colors.brandText],
+                            }),
+                        shadowColor: colors.brandDeep,
+                        shadowOpacity: usernameFocus.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, !isDark ? 0.08 : 0],
+                        }),
+                      },
+                    ]}
+                  >
+                    <Icon
+                      name="user"
+                      size={20}
+                      color={usernameFocused ? colors.brandText : colors.textMuted}
+                      accessible={false}
+                    />
+                    <TextInput
+                      style={[
+                        styles.input,
+                        { color: colors.textPrimary, writingDirection: containsLatin(username) ? 'ltr' : 'rtl' },
+                      ]}
+                      value={username}
+                      onChangeText={(value) => {
+                        setUsername(value)
+                        if (fieldErrors.username) setFieldErrors((current) => ({ ...current, username: undefined }))
+                      }}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoComplete="username"
+                      textContentType="username"
+                      returnKeyType="next"
+                      placeholder="اسم المستخدم"
+                      placeholderTextColor={colors.textMuted}
+                      editable={!busy}
+                      onFocus={() => setFocusedField('username')}
+                      onBlur={() => setFocusedField(null)}
+                      onSubmitEditing={() => passwordInput.current?.focus()}
+                      accessibilityLabel="اسم المستخدم"
+                    />
+                  </Animated.View>
+                </Animated.View>
+                <FieldError message={fieldErrors.username} color={colors.crimson} />
+              </View>
 
-          <View style={s.field}>
-            <Text style={[s.label, { color: colors.textSecondary }]}>كلمة المرور</Text>
-            <TextInput
-              style={[s.input, { backgroundColor: colors.inputBg, color: colors.inputText }]}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              textContentType="password"
-              placeholderTextColor={colors.inputPlaceholder}
-              editable={!busy}
-              onSubmitEditing={submitCredentials}
-              returnKeyType="go"
-            />
-          </View>
+              <View style={styles.field}>
+                <View style={styles.labelWrap}>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>كلمة المرور</Text>
+                </View>
+                <Animated.View style={focusRing(passwordFocus)}>
+                  <Animated.View
+                    style={[
+                      styles.inputRow,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: fieldErrors.password
+                          ? colors.crimson
+                          : passwordFocus.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [colors.border, colors.brandText],
+                            }),
+                        shadowColor: colors.brandDeep,
+                        shadowOpacity: passwordFocus.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, !isDark ? 0.08 : 0],
+                        }),
+                      },
+                    ]}
+                  >
+                    <Icon
+                      name="lock"
+                      size={20}
+                      color={passwordFocused ? colors.brandText : colors.textMuted}
+                      accessible={false}
+                    />
+                    <TextInput
+                      ref={passwordInput}
+                      style={[
+                        styles.input,
+                        { color: colors.textPrimary, writingDirection: containsLatin(password) ? 'ltr' : 'rtl' },
+                      ]}
+                      value={password}
+                      onChangeText={(value) => {
+                        setPassword(value)
+                        if (fieldErrors.password) setFieldErrors((current) => ({ ...current, password: undefined }))
+                      }}
+                      secureTextEntry={!showPassword}
+                      autoComplete="password"
+                      textContentType="password"
+                      returnKeyType="done"
+                      placeholder="كلمة المرور"
+                      placeholderTextColor={colors.textMuted}
+                      editable={!busy}
+                      onFocus={() => setFocusedField('password')}
+                      onBlur={() => setFocusedField(null)}
+                      onSubmitEditing={submitCredentials}
+                      accessibilityLabel="كلمة المرور"
+                    />
+                    <PressableScale
+                      onPress={() => setShowPassword((value) => !value)}
+                      disabled={busy}
+                      accessibilityLabel="إظهار كلمة المرور"
+                      accessibilityState={{ selected: showPassword }}
+                      hitSlop={4}
+                      style={styles.eyeButton}
+                    >
+                      <Icon
+                        name={showPassword ? 'eye-off' : 'eye'}
+                        size={20}
+                        color={colors.textMuted}
+                        accessible={false}
+                      />
+                    </PressableScale>
+                  </Animated.View>
+                </Animated.View>
+                <FieldError message={fieldErrors.password} color={colors.crimson} />
+              </View>
+            </View>
 
+          </Animated.View>
+
+        </View>
+      </ScrollView>
+      <View style={[styles.footerWrap, { backgroundColor: colors.background, paddingBottom: insets.bottom + spacing.sm }]}>
+        <View style={styles.submitArea}>
           {error ? (
-            <View style={[s.errorBox, { backgroundColor: colors.tintCrimson, borderColor: colors.crimson }]}>
-              <Text style={[s.errorText, { color: colors.crimson }]}>{error}</Text>
+            <View style={[styles.errorBanner, { backgroundColor: colors.tintCrimson, borderColor: colors.tintCrimson }]}>
+              <Icon name="alert-circle" size={18} color={colors.crimson} accessible={false} />
+              <Text style={[styles.errorText, { color: colors.crimson }]}>{error}</Text>
             </View>
           ) : null}
-
           <Button
             label="تسجيل الدخول"
-            busyLabel="جارٍ تسجيل الدخول…"
+            busyLabel="جارٍ الدخول…"
             onPress={submitCredentials}
             busy={busy}
             disabled={!canSubmit}
+            iconName="log-in"
+            style={{
+              width: '100%',
+              height: 56,
+              borderRadius: radius.lg,
+              ...(isDark && canSubmit
+                ? {
+                    shadowColor: colors.brand,
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 12,
+                    elevation: 5,
+                  }
+                : {}),
+            }}
           />
-
-          <Text style={[s.note, { color: colors.textMuted }]}>
-            الدخول متاح لمن لديه صلاحية اعتماد أو تسجيل حضور. الحساب المقفّل أو
-            منتهي كلمة السر يُرفض من أول محاولة.
-          </Text>
         </View>
-
-        <Text style={[s.footer, { color: colors.textMuted }]}>© 2026 Delton Core · اتصال مؤمَّن عبر HTTPS</Text>
-      </ScrollView>
+        <View style={styles.helpList}>
+          <HelpLine
+            icon="shield"
+            text="الدخول متاح لمن لديه صلاحية اعتماد أو تسجيل حضور."
+            colors={colors}
+          />
+          <HelpLine
+            icon="info"
+            text="الحساب المقفّل أو منتهي كلمة السر يُرفض من أول محاولة."
+            colors={colors}
+          />
+        </View>
+        <View style={styles.footer}>
+          <View style={styles.footerSide}>
+            <Icon name="lock" size={12} color={colors.textMuted} accessible={false} />
+            <Text style={[styles.footerArabic, { color: colors.textMuted }]}>اتصال مؤمَّن</Text>
+          </View>
+          <View style={[styles.footerDot, { backgroundColor: colors.textMuted }]} />
+          <Text style={[styles.footerEnglish, { color: colors.textMuted }]}>© 2026 Delton Core</Text>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   )
 }
 
-const s = StyleSheet.create({
+function FieldError({ message, color }: { message?: string; color: string }) {
+  return (
+    <View style={styles.fieldErrorSlot}>
+      {message ? (
+        <View style={styles.fieldError}>
+          <Icon name="alert-circle" size={14} color={color} accessible={false} />
+          <Text style={[styles.fieldErrorText, { color }]}>{message}</Text>
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+function HelpLine({
+  icon,
+  text,
+  colors,
+}: {
+  icon: string
+  text: string
+  colors: { tintBrand: string; brandText: string; textSecondary: string }
+}) {
+  return (
+    <View style={styles.helpRow}>
+      <View style={[styles.helpIcon, { backgroundColor: colors.tintBrand }]}>
+        <Icon name={icon} size={15} color={colors.brandText} accessible={false} />
+      </View>
+      <Text style={[styles.helpText, { color: colors.textSecondary }]}>{text}</Text>
+    </View>
+  )
+}
+
+function containsLatin(value: string) {
+  return /[A-Za-z0-9]/.test(value)
+}
+
+const styles = StyleSheet.create({
   flex: { flex: 1 },
+  glow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 320,
+  },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 22,
+    paddingHorizontal: 24,
   },
-  card: {
+  loginScroll: { flex: 1 },
+  content: {
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  form: { gap: spacing.xl },
+  brandHeader: { alignItems: 'center', gap: spacing.sm },
+  logoFrame: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.xxl,
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 24,
-    gap: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
-  head: { alignItems: 'center', gap: spacing.md },
-  pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  pillText: {
-    fontSize: 10,
-    letterSpacing: 1.4,
-    fontFamily: font.familySemiBold,
-  },
-  brand: {
-    fontSize: 25,
-    fontFamily: font.familyBold,
-  },
-  sub: {
-    fontSize: font.size.base,
-    fontFamily: font.family,
-  },
+  logo: { width: 76, height: 76 },
+  title: { fontSize: 28, lineHeight: 36, fontFamily: font.familyBold, textAlign: 'center' },
+  subtitle: { fontSize: 15, lineHeight: 22, fontFamily: font.family, textAlign: 'center' },
+  fields: { gap: spacing.lg, marginTop: spacing.xl },
   field: { gap: spacing.sm },
-  label: {
-    fontSize: font.size.md,
-    fontFamily: font.familySemiBold,
-    textAlign: 'right',
+  labelWrap: { width: '100%', direction: 'ltr', alignItems: 'flex-end' },
+  label: { width: '100%', fontSize: 13, lineHeight: 19, fontFamily: font.familySemiBold, textAlign: 'right' },
+  fieldOuter: { borderRadius: radius.lg, padding: 2 },
+  inputRow: {
+    height: 56,
+    flexDirection: 'row',
+    direction: 'rtl',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 1,
   },
   input: {
-    height: 50,
-    paddingHorizontal: 15,
-    borderRadius: 11,
-    fontSize: font.size.lg,
-    fontFamily: font.familyMedium,
+    flex: 1,
+    minWidth: 0,
+    padding: 0,
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: font.family,
     textAlign: 'right',
+    includeFontPadding: false,
   },
-  errorBox: {
+  eyeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  fieldErrorSlot: { height: 18, justifyContent: 'center' },
+  fieldError: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, direction: 'rtl' },
+  fieldErrorText: { fontSize: font.size.xs, lineHeight: 18, fontFamily: font.family },
+  submitArea: { gap: spacing.xs },
+  errorSlot: { minHeight: 0, justifyContent: 'center' },
+  errorBanner: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderWidth: 1,
     borderRadius: radius.md,
-    padding: spacing.md,
   },
-  errorText: {
-    fontSize: font.size.md,
-    fontFamily: font.familyMedium,
-    textAlign: 'right',
-    lineHeight: 21,
-  },
-  note: {
-    fontSize: 12.5,
-    lineHeight: 21,
-    fontFamily: font.family,
-    textAlign: 'right',
-  },
-  footer: {
-    fontSize: 11.5,
-    fontFamily: font.family,
-    textAlign: 'center',
-    marginTop: spacing.xl,
-  },
+  errorText: { flex: 1, fontSize: font.size.sm, lineHeight: 20, fontFamily: font.family, textAlign: 'right' },
+  helpList: { gap: spacing.md },
+  helpRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, direction: 'rtl' },
+  helpIcon: { width: 30, height: 30, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  helpText: { flex: 1, fontSize: font.size.sm, lineHeight: 18, fontFamily: font.family, textAlign: 'right' },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  footerWrap: { width: '100%', maxWidth: 420, alignSelf: 'center', paddingHorizontal: 24, paddingTop: spacing.md, gap: spacing.md },
+  footerSide: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  footerArabic: { fontSize: 11, lineHeight: 16, fontFamily: font.family },
+  footerDot: { width: 3, height: 3, borderRadius: radius.pill },
+  footerEnglish: { fontSize: 11, lineHeight: 16, fontFamily: font.family, writingDirection: 'ltr', textAlign: 'center' },
 })

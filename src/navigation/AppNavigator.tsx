@@ -6,6 +6,7 @@ import InboxScreen from '../screens/InboxScreen'
 import RequestDetailScreen from '../screens/RequestDetailScreen'
 import EmployeePickerScreen from '../screens/EmployeePickerScreen'
 import PenaltyFlow from '../screens/PenaltyFlow'
+import ProfileScreen from '../screens/ProfileScreen'
 import { useAuth } from '../auth/AuthContext'
 import { useBadge } from '../hooks/useBadge'
 import { Icon } from '../components/Icon'
@@ -17,6 +18,7 @@ type Tab = 'home' | 'inbox' | 'employees'
 type Pushed =
   | { screen: 'requestDetail'; id: string }
   | { screen: 'penalty' }
+  | { screen: 'profile' }
   | null
 
 export default function AppNavigator() {
@@ -121,6 +123,10 @@ export default function AppNavigator() {
     )
   }
 
+  if (pushed?.screen === 'profile') {
+    return <ProfileScreen onBack={closePushed} />
+  }
+
   const canApprove = session?.capabilities.can_approve ?? false
 
   return (
@@ -132,6 +138,7 @@ export default function AppNavigator() {
             onOpenInbox={() => switchTab('inbox')}
             onOpenPenalty={() => setPushed({ screen: 'penalty' })}
             onOpenEmployees={() => switchTab('employees')}
+            onOpenProfile={() => setPushed({ screen: 'profile' })}
             onCompanyChanged={() => {
               setInboxEpoch((n) => n + 1)
               refreshBadge()
