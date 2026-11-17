@@ -101,7 +101,7 @@ const INBOX: ApprovalRequestSummary[] = [
     approval_level: 1,
     employee: { id: 340, full_name_ar: 'محمود عبد الرحمن حسن', employee_number: 'EMP-00412' },
     title: 'إجازة سنوية',
-    subtitle: '٣ أيام · من ٢٢ سبتمبر',
+    subtitle: '3 أيام · من 22 سبتمبر',
     source_created_at: '2026-09-19T10:42:00Z',
   },
   {
@@ -110,8 +110,8 @@ const INBOX: ApprovalRequestSummary[] = [
     status: 'pending',
     approval_level: 1,
     employee: { id: 355, full_name_ar: 'سيد محمد علي إبراهيم', employee_number: 'EMP-00355' },
-    title: '٤٬٠٠٠ ج',
-    subtitle: 'تُسدَّد على ٤ أشهر',
+    title: '4,000 ج',
+    subtitle: 'تُسدَّد على 4 أشهر',
     source_created_at: '2026-09-18T08:15:00Z',
   },
   {
@@ -121,7 +121,7 @@ const INBOX: ApprovalRequestSummary[] = [
     approval_level: 1,
     employee: { id: 372, full_name_ar: 'كريم أشرف السيد مصطفى', employee_number: 'EMP-00372' },
     title: 'إذن انصراف مبكر',
-    subtitle: 'ساعتان · ٢٠ سبتمبر',
+    subtitle: 'ساعتان · 20 سبتمبر',
     source_created_at: '2026-09-18T07:02:00Z',
   },
   {
@@ -140,11 +140,11 @@ const DETAIL: ApprovalRequestDetail = {
   ...INBOX[0],
   details: [
     { label: 'نوع الإجازة', value: 'سنوية' },
-    { label: 'من', value: '٢٢ سبتمبر ٢٠٢٦' },
-    { label: 'إلى', value: '٢٤ سبتمبر ٢٠٢٦' },
-    { label: 'المدة', value: '٣ أيام' },
-    { label: 'الرصيد بعد الاعتماد', value: '٩ أيام' },
-    { label: 'السبب', value: 'ظروف عائلية، وسأعود للعمل يوم الخميس ٢٥ سبتمبر.' },
+    { label: 'من', value: '22 سبتمبر 2026' },
+    { label: 'إلى', value: '24 سبتمبر 2026' },
+    { label: 'المدة', value: '3 أيام' },
+    { label: 'الرصيد بعد الاعتماد', value: '9 أيام' },
+    { label: 'السبب', value: 'ظروف عائلية، وسأعود للعمل يوم الخميس 25 سبتمبر.' },
   ],
   actions: [],
   next_step: 'بعد اعتمادك ينتقل إلى الموارد البشرية',
@@ -347,7 +347,7 @@ export function installMockApi() {
           { id: 3, name: 'مخالفة سلامة' },
           { id: 4, name: 'سلوك' },
         ],
-        open_period: { id: 92, label: 'سبتمبر ٢٠٢٦' },
+        open_period: { id: 92, label: 'سبتمبر 2026' },
         max_days_before_review: 5,
       })
     }

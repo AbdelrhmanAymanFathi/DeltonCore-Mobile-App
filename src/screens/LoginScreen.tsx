@@ -1,33 +1,29 @@
 import React, { useState } from 'react'
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../auth/AuthContext'
 import { api, ApiFailure, messageFor } from '../api/client'
 import type { CompanySelectionRequired, MobileLoginResult } from '../api/types'
-import { colors, font, gradient, radius, spacing } from '../theme/tokens'
+import { useTheme } from '../theme/ThemeProvider'
+import { font, radius, spacing } from '../theme/tokens'
 import CompanyPickerScreen from './CompanyPickerScreen'
 import TwoFactorScreen from './TwoFactorScreen'
+import { Button } from '../components/ui'
 
 type Phase = 'credentials' | 'code' | 'company'
 
 export default function LoginScreen() {
+  const { colors } = useTheme()
   const { signIn, adoptSession } = useAuth()
   const [phase, setPhase] = useState<Phase>('credentials')
   const [username, setUsername] = useState('')
-  /**
-   * Held in memory only, for the lifetime of the login flow: it is replayed
-   * with the second factor and never written to storage.
-   */
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,7 +31,6 @@ export default function LoginScreen() {
 
   const canSubmit = username.trim().length > 0 && password.length > 0 && !busy
 
-  /** A successful single-company login is already committed by signIn. */
   function route(res: MobileLoginResult) {
     if ('company_required' in res && res.company_required) {
       setSelection(res)
@@ -52,7 +47,6 @@ export default function LoginScreen() {
       route(await signIn(username.trim(), password))
     } catch (e) {
       if (e instanceof ApiFailure && e.code === 'two_factor_required') {
-        // Not a failure: the password is accepted, a code is needed next.
         setError(null)
         setPhase('code')
       } else {
@@ -132,26 +126,26 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={s.flex}
+      style={[s.flex, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={s.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={s.card}>
+        <View style={[s.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={s.head}>
-            <View style={s.pill}>
-              <Text style={s.pillText}>ENTERPRISE HR SYSTEM</Text>
+            <View style={[s.pill, { backgroundColor: colors.tintBrand, borderColor: colors.brand }]}>
+              <Text style={[s.pillText, { color: colors.brandText }]}>ENTERPRISE HR SYSTEM</Text>
             </View>
-            <Text style={s.brand}>Delton Core People</Text>
-            <Text style={s.sub}>تطبيق المشرفين — ادخل بحساب النظام</Text>
+            <Text style={[s.brand, { color: colors.textPrimary }]}>Delton Core People</Text>
+            <Text style={[s.sub, { color: colors.textSecondary }]}>تطبيق المشرفين — ادخل بحساب النظام</Text>
           </View>
 
           <View style={s.field}>
-            <Text style={s.label}>اسم المستخدم</Text>
+            <Text style={[s.label, { color: colors.textSecondary }]}>اسم المستخدم</Text>
             <TextInput
-              style={s.input}
+              style={[s.input, { backgroundColor: colors.inputBg, color: colors.inputText }]}
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
@@ -163,9 +157,9 @@ export default function LoginScreen() {
           </View>
 
           <View style={s.field}>
-            <Text style={s.label}>كلمة المرور</Text>
+            <Text style={[s.label, { color: colors.textSecondary }]}>كلمة المرور</Text>
             <TextInput
-              style={s.input}
+              style={[s.input, { backgroundColor: colors.inputBg, color: colors.inputText }]}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -178,60 +172,40 @@ export default function LoginScreen() {
           </View>
 
           {error ? (
-            <View style={s.errorBox}>
-              <Text style={s.errorText}>{error}</Text>
+            <View style={[s.errorBox, { backgroundColor: colors.tintCrimson, borderColor: colors.crimson }]}>
+              <Text style={[s.errorText, { color: colors.crimson }]}>{error}</Text>
             </View>
           ) : null}
 
-          <Pressable
+          <Button
+            label="تسجيل الدخول"
+            busyLabel="جارٍ تسجيل الدخول…"
             onPress={submitCredentials}
+            busy={busy}
             disabled={!canSubmit}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !canSubmit, busy }}
-            style={({ pressed }) => [
-              s.buttonWrap,
-              !canSubmit && s.buttonDisabled,
-              pressed && canSubmit && s.buttonPressed,
-            ]}
-          >
-            <LinearGradient
-              colors={[...gradient.primary]}
-              locations={[...gradient.locations]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={s.button}
-            >
-              {busy ? (
-                <ActivityIndicator color={colors.text} />
-              ) : (
-                <Text style={s.buttonText}>تسجيل الدخول</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
+          />
 
-          <Text style={s.note}>
-            الدخول متاح لمن لديه صلاحية اعتماد أو تسجيل حضور. الحساب المقفول أو
+          <Text style={[s.note, { color: colors.textMuted }]}>
+            الدخول متاح لمن لديه صلاحية اعتماد أو تسجيل حضور. الحساب المقفّل أو
             منتهي كلمة السر يُرفض من أول محاولة.
           </Text>
         </View>
 
-        <Text style={s.footer}>© 2026 Delton Core · اتصال مؤمَّن عبر HTTPS</Text>
+        <Text style={[s.footer, { color: colors.textMuted }]}>© 2026 Delton Core · اتصال مؤمَّن عبر HTTPS</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   )
 }
 
 const s = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.page },
+  flex: { flex: 1 },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
     padding: 22,
   },
   card: {
-    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 20,
     padding: 24,
     gap: spacing.xl,
@@ -241,29 +215,23 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: colors.tealSurface,
     borderWidth: 1,
-    borderColor: colors.tealBorder,
   },
   pillText: {
-    color: colors.tealBright,
     fontSize: 10,
     letterSpacing: 1.4,
     fontFamily: font.familySemiBold,
   },
   brand: {
-    color: colors.text,
     fontSize: 25,
     fontFamily: font.familyBold,
   },
   sub: {
-    color: colors.textMuted,
     fontSize: font.size.base,
     fontFamily: font.family,
   },
   field: { gap: spacing.sm },
   label: {
-    color: colors.textStrong,
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
@@ -272,48 +240,28 @@ const s = StyleSheet.create({
     height: 50,
     paddingHorizontal: 15,
     borderRadius: 11,
-    backgroundColor: colors.inputBg,
-    color: colors.inputText,
     fontSize: font.size.lg,
     fontFamily: font.familyMedium,
     textAlign: 'right',
   },
   errorBox: {
-    backgroundColor: colors.dangerSurface,
     borderWidth: 1,
-    borderColor: colors.dangerBorder,
     borderRadius: radius.md,
     padding: spacing.md,
   },
   errorText: {
-    color: colors.danger,
     fontSize: font.size.md,
     fontFamily: font.familyMedium,
     textAlign: 'right',
     lineHeight: 21,
   },
-  buttonWrap: { borderRadius: 11, overflow: 'hidden' },
-  buttonDisabled: { opacity: 0.5 },
-  buttonPressed: { opacity: 0.85 },
-  button: {
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: colors.text,
-    fontSize: font.size.xl,
-    fontFamily: font.familyBold,
-  },
   note: {
-    color: colors.textFaint,
     fontSize: 12.5,
     lineHeight: 21,
     fontFamily: font.family,
     textAlign: 'right',
   },
   footer: {
-    color: colors.textFaint,
     fontSize: 11.5,
     fontFamily: font.family,
     textAlign: 'center',

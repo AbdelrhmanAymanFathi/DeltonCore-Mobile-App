@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Alert,
+  ActivityIndicator,
   Animated,
   AppState,
+  AccessibilityInfo,
   type AppStateStatus,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -20,28 +21,37 @@ import {
   messageForLocationFailure,
   usePunchLocation,
 } from '../location/usePunchLocation'
-import { Banner, Card, GradientButton } from '../components/ui'
+import { Banner, Button, Card, GradientButton } from '../components/ui'
+import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { Icon } from '../components/Icon'
-import { MockIndicator } from '../components/MockIndicator'
 import CompanyPickerScreen from './CompanyPickerScreen'
-import { colors, elevation, font, iconSize, MIN_TOUCH, radius, spacing } from '../theme/tokens'
+import { useTheme } from '../theme/ThemeProvider'
+import { getRequestTypeAppearance } from '../constants/requestTypes'
+import {
+  font,
+  iconSize,
+  MIN_TOUCH,
+  radius,
+  spacing,
+} from '../theme/tokens'
 
-/** Show the password-expiry warning from this many days out. */
 const PASSWORD_WARN_DAYS = 7
 
 interface Props {
-  /** From the badge poll — the home screen does not fetch the inbox itself. */
   pendingCount: number | null
   onOpenInbox: () => void
   onOpenPenalty: () => void
   onOpenEmployees: () => void
-  /** Lets the navigator refresh the badge and drop cached inbox rows. */
   onCompanyChanged: () => void
 }
 
 type PunchOutcome =
   | { kind: 'success'; res: PunchResponse }
-  | { kind: 'error'; message: string }
+  | {
+      kind: 'error'
+      message: string
+      geofence?: { distance: number | null; allowed: number | null }
+    }
 
 export default function HomeScreen({
   pendingCount,
@@ -50,11 +60,14 @@ export default function HomeScreen({
   onOpenEmployees,
   onCompanyChanged,
 }: Props) {
+  const { colors, gradients, setMode, mode } = useTheme()
   const { session, companies, switchCompany, signOut } = useAuth()
   const location = usePunchLocation()
   const insets = useSafeAreaInsets()
 
   const [today, setToday] = useState<TodayStatus | null>(null)
+  const [clock, setClock] = useState(() => new Date())
+  const [reduceMotion, setReduceMotion] = useState(false)
   const [todayError, setTodayError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [punching, setPunching] = useState(false)
@@ -65,6 +78,20 @@ export default function HomeScreen({
   const [switchError, setSwitchError] = useState<string | null>(null)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const popupAnim = useRef(new Animated.Value(0)).current
+  const segmentedAnim = useRef(new Animated.Value(modeIndex(mode))).current
+  const [segmentedWidth, setSegmentedWidth] = useState(0)
+
+  useEffect(() => {
+    if (reduceMotion) {
+      segmentedAnim.setValue(modeIndex(mode))
+      return
+    }
+    Animated.timing(segmentedAnim, {
+      toValue: modeIndex(mode),
+      duration: 180,
+      useNativeDriver: false,
+    }).start()
+  }, [mode, reduceMotion, segmentedAnim])
 
   const idemKey = useRef(newIdempotencyKey())
   const employeeId = session?.employee.id
@@ -74,14 +101,98 @@ export default function HomeScreen({
   const userName = session?.user?.full_name ?? ''
   const firstName = userName.split(/\s+/)[0] || 'مستخدم'
   const userInitial = userName.charAt(0) || 'م'
-  const isCheckedIn = today?.last_punch !== null
-  /** Tracks the last date we loaded today's status for, to detect a local date change. */
+  const isCheckedIn = today?.last_punch === 'check_in' && today.next_action === 'check_out'
+  const hasRegisteredToday = today !== null && today.last_punch !== null
   const lastDateRef = useRef<string | null>(null)
+
+  const pulseAnim = useRef(new Animated.Value(0)).current
+  const checkScale = useRef(new Animated.Value(1)).current
+  const entryAnimations = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current
+
+  useEffect(() => {
+    let active = true
+    let subscription: ReturnType<typeof AccessibilityInfo.addEventListener> | undefined
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (!active) return
+      setReduceMotion(enabled)
+      if (enabled) {
+        entryAnimations.forEach((value) => value.setValue(1))
+        return
+      }
+      Animated.stagger(60, entryAnimations.map((value) => Animated.timing(value, {
+        toValue: 1,
+        duration: 240,
+        useNativeDriver: true,
+      }))).start()
+    }, () => {
+      entryAnimations.forEach((value) => value.setValue(1))
+    })
+    subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      setReduceMotion(enabled)
+      if (enabled) {
+        entryAnimations.forEach((value) => value.setValue(1))
+        pulseAnim.stopAnimation()
+      }
+    })
+    return () => {
+      active = false
+      subscription?.remove()
+    }
+  }, [entryAnimations, pulseAnim])
+
+  useEffect(() => {
+    let active = true
+    if (isCheckedIn) pulseAnim.setValue(0)
+    const startPulse = () => Animated.loop(Animated.sequence([
+      Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+      Animated.timing(pulseAnim, { toValue: 0, duration: 1500, useNativeDriver: true }),
+    ])).start()
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) setReduceMotion(enabled)
+      if (active && !enabled && !isCheckedIn) startPulse()
+    })
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      setReduceMotion(enabled)
+      if (enabled) {
+        pulseAnim.stopAnimation()
+        pulseAnim.setValue(0)
+      } else if (!isCheckedIn) {
+        pulseAnim.setValue(0)
+        startPulse()
+      }
+    })
+    return () => {
+      active = false
+      subscription.remove()
+      pulseAnim.stopAnimation()
+    }
+  }, [isCheckedIn, pulseAnim])
+
+  useEffect(() => {
+    if (reduceMotion) {
+      checkScale.setValue(1)
+      return
+    }
+    if (!isCheckedIn) {
+      checkScale.setValue(1)
+      return
+    }
+    checkScale.setValue(0.82)
+    Animated.spring(checkScale, {
+      toValue: 1,
+      speed: 22,
+      bounciness: 3,
+      useNativeDriver: true,
+    }).start()
+  }, [checkScale, isCheckedIn, reduceMotion])
 
   const load = useCallback(async () => {
     if (!employeeId) return
-    // Detect a local date change: a new day means today's status is stale.
-    const todayKey = new Date().toLocaleDateString('ar-EG')
+    const todayKey = new Date().toLocaleDateString('ar-EG-u-nu-latn')
     if (lastDateRef.current !== null && lastDateRef.current !== todayKey) {
       setToday(null)
       setTodayError(null)
@@ -99,8 +210,11 @@ export default function HomeScreen({
     load()
   }, [load])
 
-  // Re-fetch today's status when the app returns to the foreground, so a
-  // punch made on another device or the desktop is reflected here.
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 30_000)
+    return () => clearInterval(timer)
+  }, [])
+
   useEffect(() => {
     const onChange = (state: AppStateStatus) => {
       if (state === 'active') load()
@@ -109,12 +223,10 @@ export default function HomeScreen({
     return () => sub.remove()
   }, [load])
 
-  // Poll lightly for a local date change while the app is open, so a new day
-  // refreshes today's status without the user having to pull.
   useEffect(() => {
     if (!employeeId) return
     const timer = setInterval(() => {
-      const todayKey = new Date().toLocaleDateString('ar-EG')
+      const todayKey = new Date().toLocaleDateString('ar-EG-u-nu-latn')
       if (lastDateRef.current !== null && lastDateRef.current !== todayKey) {
         load()
       }
@@ -154,18 +266,21 @@ export default function HomeScreen({
         idemKey.current,
       )
       setOutcome({ kind: 'success', res })
-      // A definite server answer: rotate so the next tap is a new intent.
       idemKey.current = newIdempotencyKey()
       await load()
     } catch (e) {
-      setOutcome({ kind: 'error', message: messageFor(e) })
-      // Keep the same key after a network error or a client-side timeout so a
-      // retry reuses it and the server recognises the repeat. Rotate only on a
-      // definite server answer (4xx/5xx with a code).
+      const geofence = e instanceof ApiFailure && e.code === 'out_of_range'
+        ? {
+            distance: e.payload.gps_distance_meters ?? null,
+            allowed: e.payload.allowed_radius_meters ?? null,
+          }
+        : undefined
+      setOutcome({ kind: 'error', message: messageFor(e), geofence })
       if (e instanceof ApiFailure && e.code !== 'timeout') {
         idemKey.current = newIdempotencyKey()
       }
     } finally {
+      setPunching(false)
       setSwitching(false)
     }
   }
@@ -175,8 +290,6 @@ export default function HomeScreen({
     setSwitchError(null)
     try {
       await switchCompany(id)
-      // Everything on screen belonged to the previous company: reset the punch
-      // intent and re-read, then let the navigator drop its cached counts.
       idemKey.current = newIdempotencyKey()
       setOutcome(null)
       setToday(null)
@@ -192,17 +305,23 @@ export default function HomeScreen({
   const toggleAccountMenu = () => {
     setAccountMenuOpen((prev) => {
       if (!prev) {
-        Animated.timing(popupAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: false,
-        }).start()
+        if (reduceMotion) popupAnim.setValue(1)
+        else Animated.timing(popupAnim, {
+            toValue: 1,
+            duration: 150,
+            useNativeDriver: false,
+          }).start()
       }
       return !prev
     })
   }
 
   const closeAccountMenu = () => {
+    if (reduceMotion) {
+      popupAnim.setValue(0)
+      setAccountMenuOpen(false)
+      return
+    }
     Animated.timing(popupAnim, {
       toValue: 0,
       duration: 100,
@@ -214,8 +333,19 @@ export default function HomeScreen({
     closeAccountMenu()
     Alert.alert('تسجيل الخروج', 'هل تريد تسجيل الخروج؟', [
       { text: 'إلغاء', style: 'cancel' },
-      { text: 'خروج', style: 'destructive', onPress: () => void signOut() },
+      { text: 'تسجيل الخروج', style: 'destructive', onPress: () => void signOut() },
     ])
+  }
+
+  const setAppearance = (next: 'system' | 'light' | 'dark') => {
+    if (reduceMotion) segmentedAnim.setValue(modeIndex(next))
+    else Animated.timing(segmentedAnim, {
+        toValue: modeIndex(next),
+        duration: 180,
+        useNativeDriver: false,
+      }).start()
+    closeAccountMenu()
+    setMode(next)
   }
 
   if (pickingCompany) {
@@ -237,53 +367,61 @@ export default function HomeScreen({
   const canPunch = session?.capabilities.can_punch ?? false
   const daysLeft = session?.password_policy.days_until_expiry ?? null
   const passwordWarn = daysLeft !== null && daysLeft > 0 && daysLeft <= PASSWORD_WARN_DAYS
+  const entryStyle = (value: Animated.Value) => ({
+    opacity: value,
+    transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+  })
+
+  const inboxAppearance = getRequestTypeAppearance('unknown', colors)
 
   return (
+    <View style={[s.screen, { backgroundColor: colors.background }]}>
     <ScrollView
-      style={s.screen}
-      contentContainerStyle={s.content}
+      style={[s.screen, { backgroundColor: colors.background }]}
+      contentContainerStyle={[s.content, { paddingBottom: 88 + 24 + insets.bottom }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={colors.teal}
+          tintColor={colors.brand}
         />
       }
     >
-      {/* Mock toast — handled by MockIndicator component */}
-      <MockIndicator />
-
+      <LinearGradient
+        pointerEvents="none"
+        colors={[colors.tintBrand, 'transparent']}
+        style={s.backgroundGlow}
+      />
       <View style={[s.header, { paddingTop: insets.top + spacing.xs }]}>
-        {/* Notifications — RTL end (left side) */}
+        <View style={s.notifLtr}>
         <Pressable
           onPress={onOpenInbox}
           accessibilityRole="button"
           accessibilityLabel="الإشعارات"
           hitSlop={12}
-          style={s.notifPressable}
+          style={[s.notifPressable, { backgroundColor: colors.surface, borderColor: colors.border }]}
         >
           <View style={s.notifWrap}>
-            <Icon name="bell" size={20} color={colors.textMuted} accessible={false} />
+            <Icon name="bell" size={20} color={colors.textPrimary} accessible={false} />
             {typeof pendingCount === 'number' && pendingCount > 0 ? (
-              <View style={s.badgeWrap}>
-                <Text style={s.badgeText}>{pendingCount > 99 ? '٩٩+' : pendingCount}</Text>
+              <View style={[s.badgeWrap, { backgroundColor: colors.badgeCrimson, borderColor: colors.background }]}>
+                <Text style={[s.badgeText, { color: colors.onCrimson }]}>{pendingCount > 99 ? '99+' : pendingCount.toLocaleString('ar-EG-u-nu-latn')}</Text>
               </View>
             ) : null}
           </View>
         </Pressable>
+        </View>
 
-        {/* Text column */}
         <View style={s.headerText}>
-          <Text style={s.greeting}>أهلاً، {firstName}</Text>
+          <Text style={[s.greeting, { color: colors.textSecondary }]}>أهلاً، {firstName}</Text>
           <View style={s.siteRow}>
-            <Icon name="factory" family="material-community" size={16} color={colors.teal} accessible={false} />
-            <Text style={s.siteName} numberOfLines={1}>
+            <Icon name="factory" family="material-community" size={16} color={colors.brand} accessible={false} />
+            <Text style={[s.siteName, { color: colors.textPrimary }]} numberOfLines={1}>
               {session?.site?.name_ar || companyName || ''}
             </Text>
           </View>
         </View>
 
-        {/* Avatar — RTL start (right side) */}
         <Pressable
           onPress={toggleAccountMenu}
           accessibilityRole="button"
@@ -293,21 +431,21 @@ export default function HomeScreen({
         >
           <View style={s.avatarWrap}>
             <LinearGradient
-              colors={['#14B8A6', '#7C3AED']}
+              colors={[colors.brandLight, colors.brand, colors.brandDeep]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={s.avatarGradient}
             >
-              <Text style={s.avatarText}>{userInitial}</Text>
+              <Text style={[s.avatarText, { color: colors.onBrand }]}>{userInitial}</Text>
             </LinearGradient>
-            <View style={[s.statusDot, isCheckedIn ? s.statusOnline : s.statusOffline]} />
+            <View style={[s.statusDot, isCheckedIn ? { backgroundColor: colors.success, borderColor: colors.background } : { backgroundColor: colors.textMuted, borderColor: colors.background }]} />
           </View>
         </Pressable>
       </View>
 
       {accountMenuOpen ? (
         <Pressable
-          style={s.popupBackdrop}
+          style={[s.popupBackdrop, { backgroundColor: colors.scrim }]}
           onPress={closeAccountMenu}
           accessibilityRole="button"
           accessibilityLabel="إغلاق القائمة"
@@ -315,7 +453,7 @@ export default function HomeScreen({
           <Animated.View
             style={[
               s.popup,
-              { right: spacing.sm, top: insets.top + 72 + spacing.sm },
+              { right: spacing.sm, top: insets.top + 72 + spacing.sm, backgroundColor: colors.surfaceElevated, borderColor: colors.border, shadowColor: colors.background, shadowOpacity: 0.25 },
               {
                 opacity: popupAnim,
                 transform: [
@@ -330,20 +468,67 @@ export default function HomeScreen({
             ]}
           >
             <View style={s.popupHeader}>
-              <Text style={s.popupName}>{userName}</Text>
-              <Text style={s.popupRole}>{session?.site?.name_ar || ''}</Text>
+              <Text style={[s.popupName, { color: colors.textPrimary }]}>{userName}</Text>
+              <Text style={[s.popupRole, { color: colors.textMuted }]}>{session?.site?.name_ar || ''}</Text>
             </View>
-            <View style={s.popupDivider} />
+            <View style={[s.popupDivider, { backgroundColor: colors.border }]} />
+
+            <View style={s.popupSection}>
+              <Text style={[s.popupSectionTitle, { color: colors.textSecondary }]}>المظهر</Text>
+              <View
+                style={[s.segmentedControl, { backgroundColor: colors.surface }]}
+                onLayout={(event) => setSegmentedWidth(event.nativeEvent.layout.width)}
+              >
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    s.segmentIndicator,
+                    {
+                      width: segmentedWidth / 3,
+                      right: segmentedAnim.interpolate({
+                        inputRange: [0, 1, 2],
+                        outputRange: [0, segmentedWidth / 3, (segmentedWidth * 2) / 3],
+                      }),
+                      backgroundColor: colors.brand,
+                    },
+                  ]}
+                />
+                <Pressable
+                  onPress={() => setAppearance('system')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: mode === 'system' }}
+                  style={s.segmentItem}
+                >
+                  <Text style={[s.segmentText, { color: mode === 'system' ? colors.onBrand : colors.textSecondary }]}>تلقائي</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setAppearance('light')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: mode === 'light' }}
+                  style={s.segmentItem}
+                >
+                  <Text style={[s.segmentText, { color: mode === 'light' ? colors.onBrand : colors.textSecondary }]}>فاتح</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setAppearance('dark')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: mode === 'dark' }}
+                  style={s.segmentItem}
+                >
+                  <Text style={[s.segmentText, { color: mode === 'dark' ? colors.onBrand : colors.textSecondary }]}>داكن</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={[s.popupDivider, { backgroundColor: colors.border }]} />
             <Pressable
               onPress={handleLogoutPress}
               accessibilityRole="button"
               accessibilityLabel="تسجيل الخروج"
-              style={s.popupItem}
+              style={({ pressed }) => [s.popupItem, { backgroundColor: pressed ? colors.tintCrimson : 'transparent' }]}
             >
-              <Icon name="log-out" size={16} color={colors.danger} accessible={false} />
-              <Text style={s.popupItemText} numberOfLines={1}>
-                تسجيل الخروج
-              </Text>
+              <Icon name="log-out" size={16} color={colors.crimson} accessible={false} />
+              <Text style={[s.popupItemText, { color: colors.crimson }]}>تسجيل الخروج</Text>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -352,100 +537,184 @@ export default function HomeScreen({
       <View style={s.body}>
         {passwordWarn ? (
           <Banner tone="warn">
-            {`تنتهي صلاحية كلمة مرورك خلال ${daysLeft} يومًا. غيّرها من النسخة الويب قبل أن يُقفل الحساب.`}
+            {`تنتهي صلاحية كلمة مرورك خلال ${daysLeft?.toLocaleString('ar-EG-u-nu-latn')} يومًا. غيّرها من النسخة الويب قبل أن يُقفل الحساب.`}
           </Banner>
         ) : null}
 
         {canPunch ? (
+          <Animated.View style={entryStyle(entryAnimations[0])}>
           <Card style={s.punchCard}>
-            <View style={s.cardHead}>
-              <Text style={s.cardLabel}>حالة اليوم</Text>
-              <Text style={s.cardDate}>{todayLabel()}</Text>
+            <View style={[s.heroLight, { backgroundColor: colors.brand }]} />
+            <View style={s.heroTop}>
+              <View style={s.todayStatusWrap}>
+                <View style={[s.todayStatus, { backgroundColor: hasRegisteredToday ? colors.tintSuccess : colors.tintBrand }]}>
+                  <Text style={{ color: hasRegisteredToday ? colors.success : colors.brandText, fontFamily: font.familySemiBold, fontSize: font.size.xs }}>
+                    {today === null
+                      ? 'جارٍ التحميل'
+                      : hasRegisteredToday && today.last_punch === 'check_in'
+                        ? 'تم تسجيل الحضور'
+                        : today?.last_punch === 'check_out'
+                          ? 'سجّلت الانصراف'
+                          : 'لم تسجّل حضورك بعد'}
+                  </Text>
+                </View>
+              </View>
+              <View style={s.heroClock}>
+                <Text style={[s.heroTime, { color: colors.textPrimary }]}>{timeNow(clock)}</Text>
+                <Text style={[s.heroDate, { color: colors.textSecondary }]}>{todayLabel(clock)}</Text>
+              </View>
             </View>
+
             {todayError ? (
               <View style={s.todayError}>
-                <Text style={s.state}>{todayError}</Text>
+                <Text style={[s.state, { color: colors.textPrimary }]}>{todayError}</Text>
                 <Pressable
                   onPress={load}
                   accessibilityRole="button"
                   accessibilityLabel="إعادة المحاولة"
-                  style={s.retry}
+                  style={[s.retry, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
                 >
-                  <Text style={s.retryText}>إعادة المحاولة</Text>
+                  <Text style={[s.retryText, { color: colors.brandText }]}>إعادة المحاولة</Text>
                 </Pressable>
               </View>
             ) : (
-              <Text style={[s.state, checkingIn ? s.stateCheckedIn : s.stateCheckedOut]}>
-                {today === null
-                  ? '—'
-                  : today.last_punch === null
-                    ? 'لم تسجّل حضورك بعد'
-                    : checkingIn
-                      ? 'سجّلت الانصراف'
-                      : `سجّلت الحضور ${timeOf(today.last_punch_at)}`}
-              </Text>
+              <View style={s.heroAction}>
+                {!isCheckedIn ? <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    s.pulseRing,
+                    {
+                      borderColor: colors.brand,
+                      opacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
+                      transform: [{ scale: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }],
+                    },
+                  ]}
+                /> : null}
+                {!isCheckedIn ? <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    s.pulseRing,
+                    s.pulseRingInner,
+                    {
+                      borderColor: colors.brand,
+                      opacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0] }),
+                      transform: [{ scale: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.16] }) }],
+                    },
+                  ]}
+                /> : null}
+                <Pressable
+                  onPress={punch}
+                  disabled={today === null || todayError !== null || punching || location.busy}
+                  accessibilityRole="button"
+                  accessibilityLabel={checkingIn ? 'تسجيل الحضور' : 'تسجيل الانصراف'}
+                  accessibilityState={{ disabled: today === null || todayError !== null, busy: punching || location.busy }}
+                  style={[s.punchCircle, { borderColor: isCheckedIn ? colors.success : colors.brand }]}
+                >
+                  <LinearGradient
+                    colors={isCheckedIn ? [colors.success, colors.success] : gradients.brand}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={s.punchCircleGradient}
+                  >
+                    {punching || location.busy ? (
+                      <ActivityIndicator size="large" color={colors.onBrand} />
+                    ) : isCheckedIn ? (
+                      <Animated.View style={{ alignItems: 'center', transform: [{ scale: checkScale }] }}>
+                        <Icon name="check" size={34} color={colors.onSuccess} accessible={false} />
+                        <Text style={[s.punchTime, { color: colors.onSuccess }]}>{timeOf(today?.last_punch_at ?? null)}</Text>
+                      </Animated.View>
+                    ) : (
+                      <Icon name={checkingIn ? 'fingerprint' : 'log-out'} family={checkingIn ? 'material-community' : 'feather'} size={44} color={colors.onBrand} accessible={false} />
+                    )}
+                  </LinearGradient>
+                </Pressable>
+                <Text style={[s.punchLabel, { color: colors.textPrimary }]}>
+                  {punching || location.busy ? 'جارٍ التسجيل…' : checkingIn ? 'تسجيل الحضور' : 'تسجيل الانصراف'}
+                </Text>
+              </View>
             )}
-
-            <GradientButton
-              label={checkingIn ? 'تسجيل حضور' : 'تسجيل انصراف'}
-              iconName={checkingIn ? 'play' : 'log-out'}
-              busy={punching || location.busy}
-              disabled={today === null || todayError !== null}
-              onPress={punch}
-            />
 
             {outcome?.kind === 'error' ? (
-              <View style={s.outcome}>
-                <Banner tone="error">{outcome.message}</Banner>
+              <View style={[s.locationChip, { backgroundColor: colors.tintCrimson }]}>
+                <View style={[s.locationDot, { backgroundColor: colors.crimson }]} />
+                <Text style={[s.locationText, { color: colors.crimson }]} numberOfLines={2}>
+                  {outcome.geofence
+                    ? `خارج النطاق${outcome.geofence.distance !== null ? ` · ${outcome.geofence.distance.toLocaleString('ar-EG-u-nu-latn')} م` : ''}${outcome.geofence.allowed !== null ? ` (المسموح ${outcome.geofence.allowed.toLocaleString('ar-EG-u-nu-latn')} م)` : ''}`
+                    : 'تعذّر التحقق من موقعك'}
+                </Text>
               </View>
-            ) : outcome?.kind === 'success' ? (
-              <View style={s.outcome}>
-                <Banner tone={outcome.res.location_status === 'verified' ? 'info' : 'warn'}>
-                  {outcome.res.location_status === 'verified'
-                    ? `تم التسجيل والتحقق من الموقع${
-                        outcome.res.gps_distance_meters !== null
-                          ? ` — على بعد ${outcome.res.gps_distance_meters} مترًا`
-                          : ''
-                      }.`
-                    : 'تم التسجيل، لكن موقع العمل لم تُضبط إحداثياته بعد فلم يُتحقق من موقعك.'}
-                </Banner>
+            ) : outcome?.kind === 'success' && outcome.res.location_status === 'verified' ? (
+              <View style={[s.locationChip, { backgroundColor: colors.tintSuccess }]}>
+                <View style={[s.locationDot, { backgroundColor: colors.success }]} />
+                <Text style={[s.locationText, { color: colors.success }]} numberOfLines={2}>
+                  داخل النطاق{outcome.res.gps_distance_meters !== null ? ` · ${outcome.res.gps_distance_meters.toLocaleString('ar-EG-u-nu-latn')} م` : ''}
+                </Text>
               </View>
             ) : (
-              <Text style={s.hint}>
-                يُلتقط موقعك عند التسجيل ويُتحقق أنك داخل نطاق الموقع.
-              </Text>
+              <View style={[s.locationChip, { backgroundColor: colors.tintBrand }]}>
+                <View style={[s.locationDot, { backgroundColor: colors.warning }]} />
+                <Text style={[s.locationText, { color: colors.textSecondary }]} numberOfLines={2}>
+                  يُلتقط موقعك عند التسجيل ويُتحقق من نطاق الموقع.
+                </Text>
+              </View>
+            )}
+            {outcome?.kind === 'error' ? (
+              <Text style={[s.hint, { color: colors.textMuted }]}>{outcome.message}</Text>
+            ) : (
+              <Text style={[s.hint, { color: colors.textMuted }]}>يُلتقط موقعك عند التسجيل ويُتحقق أنك داخل نطاق الموقع.</Text>
             )}
           </Card>
+          </Animated.View>
         ) : null}
 
-        <Pressable onPress={onOpenInbox} accessibilityRole="button">
-          <Card>
-            <View style={s.cardHead}>
-              <Text style={s.cardTitle}>صندوق الطلبات</Text>
-              {pendingCount !== null && pendingCount > 0 ? (
-                <View style={s.countPill}>
-                  <Text style={s.countText}>{pendingCount} منتظرة</Text>
+        <Animated.View style={entryStyle(entryAnimations[1])}>
+          <Pressable onPress={onOpenInbox} accessibilityRole="button" card>
+            <Card style={s.requestsCard}>
+              <View style={s.cardHead}>
+                <View style={s.requestsTitle}>
+                  <Text style={[s.cardTitle, { color: colors.textPrimary }]}>صندوق الطلبات</Text>
+                  {pendingCount !== null ? (
+                    <View style={[s.countPill, { backgroundColor: pendingCount ? colors.tintCrimson : colors.surfaceElevated }]}>
+                      <Text style={[s.countText, { color: pendingCount ? colors.crimson : colors.textMuted }]}>
+                        {pendingCount.toLocaleString('ar-EG-u-nu-latn')}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
-              ) : null}
-              <View style={s.grow} />
-              <Text style={s.link}>عرض الكل</Text>
-            </View>
-            <Text style={s.hint}>
-              {pendingCount === 0
-                ? 'لا يوجد ما ينتظر قرارك الآن.'
-                : 'كل ما ينتظر قرارك، من كل الأنواع، في قائمة واحدة.'}
-            </Text>
-          </Card>
-        </Pressable>
+                <View style={s.grow} />
+                <Button label="عرض الكل" variant="ghost" onPress={onOpenInbox} style={s.showAllButton} />
+              </View>
+              <View style={[s.emptyState, { borderTopColor: colors.border }]}>
+                <View style={[s.emptyIcon, { backgroundColor: colors.tintBrand }]}>
+                  <Icon
+                    name={inboxAppearance.icon}
+                    family="material-community"
+                    size={20}
+                    color={inboxAppearance.color}
+                    accessible={false}
+                  />
+                </View>
+                <Text style={[s.hint, { color: colors.textMuted, marginTop: 0 }]}>
+                  {pendingCount === 0
+                    ? 'لا توجد طلبات تنتظر قرارك الآن.'
+                    : pendingCount === null
+                      ? 'بيانات الطلبات غير متاحة الآن.'
+                      : 'لديك طلبات تنتظر مراجعتك.'}
+                </Text>
+              </View>
+            </Card>
+          </Pressable>
+        </Animated.View>
 
-        <View style={s.tiles}>
+        <Animated.View style={[s.tiles, entryStyle(entryAnimations[2])]}>
           {session?.capabilities.can_create_penalty ? (
-            <Tile label="تسجيل جزاء" iconName="alert-circle" onPress={onOpenPenalty} tone={colors.danger} />
+            <Tile label="تسجيل جزاء" iconName="alert-circle" onPress={onOpenPenalty} tone="crimson" colors={colors} />
           ) : null}
-          <Tile label="موظفو الموقع" iconName="users" onPress={onOpenEmployees} tone={colors.teal} />
-        </View>
+          <Tile label="موظفو الموقع" iconName="users" onPress={onOpenEmployees} tone="brand" colors={colors} />
+        </Animated.View>
       </View>
     </ScrollView>
+    </View>
   )
 }
 
@@ -454,71 +723,114 @@ function Tile({
   iconName,
   onPress,
   tone,
+  colors,
 }: {
   label: string
   iconName?: string
   onPress: () => void
-  tone: string
+  tone: 'brand' | 'crimson'
+  colors: {
+    brand: string
+    brandText: string
+    crimson: string
+    tintBrand: string
+    tintCrimson: string
+    surface: string
+    border: string
+    textPrimary: string
+    textSecondary: string
+    textMuted: string
+  }
 }) {
+  const iconColor = tone === 'brand' ? colors.brandText : colors.crimson
+  const iconBackground = tone === 'brand' ? colors.tintBrand : colors.tintCrimson
+  const subtitle = tone === 'brand' ? 'قائمة العاملين بالموقع' : 'مخالفة أو تأخير'
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [s.tile, pressed && s.tilePressed]}
+      accessibilityLabel={`${label}، ${subtitle}`}
+      card
+      style={[
+        s.tile,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
     >
-      {iconName ? <Icon name={iconName} size={16} color={tone} accessible={false} /> : null}
-      <View style={[s.tileDot, { backgroundColor: tone }]} />
-      <Text style={s.tileLabel}>{label}</Text>
+      <View style={[s.tileIcon, { backgroundColor: iconBackground }]}>
+        {iconName ? <Icon name={iconName} size={20} color={iconColor} accessible={false} /> : null}
+      </View>
+      <View style={s.tileText}>
+        <Text style={[s.tileLabel, { color: colors.textPrimary }]}>{label}</Text>
+        <Text style={[s.tileSubtitle, { color: colors.textMuted }]}>{subtitle}</Text>
+      </View>
+      <Icon name="chevron-left" size={18} color={colors.textMuted} accessible={false} />
     </Pressable>
   )
 }
 
-function todayLabel() {
-  return new Date().toLocaleDateString('ar-EG', {
+function todayLabel(date: Date) {
+  return date.toLocaleDateString('ar-EG-u-nu-latn', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   })
 }
 
+function modeIndex(mode: 'system' | 'light' | 'dark') {
+  return mode === 'system' ? 0 : mode === 'light' ? 1 : 2
+}
+
+function timeNow(date: Date) {
+  return date.toLocaleTimeString('ar-EG-u-nu-latn', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  })
+}
+
 function timeOf(iso: string | null) {
   if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('ar-EG', {
+  return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', {
     hour: 'numeric',
     minute: '2-digit',
   })
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
-  content: { paddingBottom: spacing.xxl },
+  screen: { flex: 1 },
+  content: { paddingBottom: spacing.xxl, position: 'relative' },
+  backgroundGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 280,
+  },
   header: {
-    backgroundColor: colors.page,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSoft,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.xl,
     flexDirection: 'row',
+    direction: 'ltr',
     alignItems: 'center',
     gap: spacing.md,
     position: 'relative',
     minHeight: 72,
     overflow: 'visible',
+    backgroundColor: 'transparent',
   },
-  headerText: { flex: 1 },
-  pressed: { opacity: 0.7 },
+  notifLtr: { direction: 'ltr' },
+  headerText: { flex: 1, direction: 'rtl' },
   greeting: {
-    color: '#94A3B8',
     fontSize: font.size.md,
     fontFamily: font.family,
     textAlign: 'right',
   },
   siteRow: {
     flexDirection: 'row',
+    direction: 'rtl',
     alignItems: 'center',
     gap: spacing.xs,
   },
   siteName: {
-    color: colors.text,
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
@@ -545,7 +857,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    color: colors.text,
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
     textAlign: 'center',
@@ -558,24 +869,15 @@ const s = StyleSheet.create({
     bottom: 0,
     left: 0,
     borderWidth: 2,
-    borderColor: colors.page,
+    borderColor: 'transparent',
   },
-  statusOnline: {
-    backgroundColor: colors.success,
-  },
-  statusOffline: {
-    backgroundColor: '#94A3B8',
-  },
-  // Notifications
   notifPressable: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#131C2B',
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
+    borderRadius: radius.pill,
     overflow: 'visible',
   },
   notifWrap: {
@@ -585,20 +887,18 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#EF4444',
     borderRadius: 9,
     minWidth: 18,
     height: 18,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeText: {
-    color: colors.page,
     fontSize: 11,
     fontFamily: font.familyBold,
     textAlign: 'center',
   },
-  // Account popup menu
   popupBackdrop: {
     position: 'absolute',
     inset: 0,
@@ -609,13 +909,9 @@ const s = StyleSheet.create({
     right: spacing.sm,
     top: 0,
     minWidth: 240,
-    backgroundColor: '#131C2B',
     borderWidth: 1,
-    borderColor: '#1F2A3D',
     borderRadius: radius.lg,
     padding: spacing.xs,
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
@@ -627,14 +923,12 @@ const s = StyleSheet.create({
     alignSelf: 'stretch',
   },
   popupName: {
-    color: colors.text,
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
     alignSelf: 'stretch',
   },
   popupRole: {
-    color: colors.textMuted,
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
@@ -642,7 +936,6 @@ const s = StyleSheet.create({
   },
   popupDivider: {
     height: 1,
-    backgroundColor: '#1F2A3D',
     marginVertical: spacing.xs,
   },
   popupItem: {
@@ -654,14 +947,47 @@ const s = StyleSheet.create({
     minHeight: 48,
   },
   popupItemText: {
-    color: colors.text,
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
     alignSelf: 'stretch',
-    flex: 1,
+    flexShrink: 1,
   },
-  body: { padding: spacing.lg, gap: spacing.lg },
+  popupSection: {
+    paddingHorizontal: spacing.sm,
+  },
+  popupSectionTitle: {
+    fontSize: font.size.sm,
+    fontFamily: font.familySemiBold,
+    textAlign: 'right',
+    marginBottom: spacing.xs,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    height: 40,
+    position: 'relative',
+  },
+  segmentItem: {
+    flex: 1,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  segmentText: {
+    fontSize: font.size.sm,
+    fontFamily: font.familyMedium,
+    textAlign: 'center',
+  },
+  segmentIndicator: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    borderRadius: radius.md,
+  },
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.lg },
   cardHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -670,94 +996,181 @@ const s = StyleSheet.create({
   },
   cardLabel: {
     flex: 1,
-    color: colors.textFaint,
     fontSize: font.size.md,
     fontFamily: font.familyMedium,
     textAlign: 'right',
   },
-  cardDate: {
-    color: colors.textFaint,
-    fontSize: font.size.md,
-    fontFamily: font.family,
-  },
   cardTitle: {
-    color: colors.text,
-    fontSize: font.size.lg,
+    fontSize: 20,
+    lineHeight: 28,
     fontFamily: font.familySemiBold,
   },
+  requestsTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   grow: { flex: 1 },
   countPill: {
-    paddingHorizontal: 9,
-    paddingVertical: 2,
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: colors.dangerSurface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   countText: {
-    color: colors.danger,
     fontSize: font.size.sm,
     fontFamily: font.familySemiBold,
   },
-  link: {
-    color: colors.teal,
-    fontSize: font.size.md,
-    fontFamily: font.familySemiBold,
-  },
   state: {
-    color: colors.text,
     fontSize: font.size.title,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
     marginBottom: spacing.lg,
   },
   hint: {
-    color: colors.textFaint,
-    fontSize: font.size.sm,
+    fontSize: 12,
     fontFamily: font.family,
     textAlign: 'right',
-    marginTop: 10,
-    lineHeight: 20,
+    marginTop: spacing.sm,
+    lineHeight: 18,
   },
-  outcome: { marginTop: spacing.md },
   todayError: { gap: spacing.sm, alignItems: 'center', marginTop: spacing.md },
   punchCard: {
-    ...elevation.medium,
-    backgroundColor: colors.cardRaised,
+    padding: spacing.xl,
     borderWidth: 1,
-    borderColor: colors.borderRaised,
+    borderRadius: radius.hero,
+    overflow: 'hidden',
+    gap: spacing.md,
   },
-  stateCheckedIn: { color: colors.success },
-  stateCheckedOut: { color: colors.teal },
+  heroLight: {
+    position: 'absolute',
+    top: 0,
+    left: spacing.xl,
+    right: spacing.xl,
+    height: 1,
+    opacity: 0.65,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    minHeight: 54,
+  },
+  todayStatusWrap: { flex: 1, alignItems: 'flex-start', paddingTop: 2 },
+  todayStatus: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill },
+  heroClock: { alignItems: 'flex-end' },
+  heroTime: {
+    fontSize: 32,
+    lineHeight: 40,
+    fontFamily: font.familyBold,
+    fontVariant: ['tabular-nums'],
+  },
+  heroDate: { fontSize: 12, lineHeight: 18, fontFamily: font.family },
+  heroAction: { alignItems: 'center', justifyContent: 'center', minHeight: 194 },
+  pulseRing: {
+    position: 'absolute',
+    width: 168,
+    height: 168,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+  },
+  pulseRingInner: { width: 154, height: 154 },
+  punchCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  punchCircleGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  punchTime: { fontSize: 15, fontFamily: font.familyBold },
+  punchLabel: {
+    alignSelf: 'stretch',
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: font.familyBold,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  locationChip: {
+    minHeight: 32,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  locationDot: { width: 7, height: 7, borderRadius: radius.pill },
+  locationText: {
+    flex: 1,
+    flexShrink: 1,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: font.familySemiBold,
+    textAlign: 'center',
+  },
+  requestsCard: { padding: spacing.lg, borderRadius: radius.xl },
+  emptyState: {
+    borderTopWidth: 1,
+    paddingTop: spacing.md,
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  emptyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showAllButton: { width: 132, minHeight: 44, paddingHorizontal: spacing.sm },
+  emptyStateText: { fontSize: 13, lineHeight: 20, fontFamily: font.family, textAlign: 'center' },
   retry: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: colors.cardRaised,
     borderWidth: 1,
-    borderColor: colors.borderRaised,
   },
   retryText: {
-    color: colors.teal,
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
   },
   tiles: { flexDirection: 'row', gap: spacing.md },
   tile: {
     flex: 1,
-    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.xl,
-    padding: spacing.lg,
-    gap: spacing.md,
-    minHeight: 92,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 100,
+  },
+  tileIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  tilePressed: { backgroundColor: colors.cardRaised },
-  tileDot: { width: 10, height: 10, borderRadius: 5 },
+  tileText: { flex: 1, gap: spacing.xs },
   tileLabel: {
-    color: colors.text,
-    fontSize: font.size.base,
+    fontSize: 15,
+    lineHeight: 22,
     fontFamily: font.familySemiBold,
+    textAlign: 'right',
+  },
+  tileSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: font.family,
     textAlign: 'right',
   },
 })

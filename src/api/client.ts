@@ -443,7 +443,7 @@ export function messageFor(err: unknown): string {
     case 'password_locked':
       return 'الحساب مقفول لانتهاء صلاحية كلمة المرور. راجع الموارد البشرية.'
     case 'too_many_attempts':
-      return `محاولات كثيرة. حاول بعد ${p.retry_after_seconds ?? 60} ثانية.`
+      return `محاولات كثيرة. حاول بعد ${(p.retry_after_seconds ?? 60).toLocaleString('ar-EG-u-nu-latn')} ثانية.`
     case 'account_inactive':
       return 'الحساب غير نشط. راجع الموارد البشرية.'
     case 'no_employee_profile':
@@ -485,7 +485,7 @@ export function messageFor(err: unknown): string {
     case 'state_conflict':
       return 'تم البتّ في هذا الطلب من مكان آخر. سنحدّث القائمة الآن.'
     case 'out_of_range':
-      return `أنت على بعد ${p.gps_distance_meters} مترًا من ${p.site_name}. المسموح ${p.allowed_radius_meters} مترًا.`
+      return `أنت على بعد ${p.gps_distance_meters?.toLocaleString('ar-EG-u-nu-latn') ?? 'غير محدد'} مترًا من ${p.site_name ?? 'الموقع'}. المسموح ${p.allowed_radius_meters?.toLocaleString('ar-EG-u-nu-latn') ?? 'غير محدد'} مترًا.`
     case 'gps_inaccurate':
       return 'إشارة الموقع ضعيفة. اخرج إلى مكان مكشوف وحاول مرة أخرى.'
     case 'gps_unavailable':

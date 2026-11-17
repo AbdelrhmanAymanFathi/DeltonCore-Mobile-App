@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/loadingicon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F4F4F4",
+      "backgroundColor": "#F7F5F0",
       "imageWidth": 240
     },
     "androidStatusBar": {

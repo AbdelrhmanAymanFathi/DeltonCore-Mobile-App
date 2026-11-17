@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -11,17 +10,19 @@ import { api, messageFor } from '../api/client'
 import type { SiteEmployee } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { ScreenHeader, SolidButton } from '../components/ui'
+import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { Icon } from '../components/Icon'
-import { colors, elevation, font, radius, spacing } from '../theme/tokens'
+import { useTheme } from '../theme/ThemeProvider'
+import { font, radius, spacing } from '../theme/tokens'
 
 interface Props {
   title?: string
   onBack: () => void
-  /** Omitted when the screen is used as a read-only directory. */
   onPick?: (employee: SiteEmployee) => void
 }
 
 export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
+  const { colors } = useTheme()
   const { session } = useAuth()
   const siteId = session?.site?.id ?? null
 
@@ -50,8 +51,6 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
     [siteId],
   )
 
-  // Debounced so typing a name does not fire a request per keystroke on a
-  // field connection.
   useEffect(() => {
     const t = setTimeout(() => {
       setLoading(true)
@@ -61,12 +60,12 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
   }, [query, load])
 
   return (
-    <View style={s.screen}>
+    <View style={[s.screen, { backgroundColor: colors.background }]}>
       <ScreenHeader title={title ?? 'موظفو الموقع'} onBack={onBack} />
 
-      <View style={s.searchWrap}>
+      <View style={[s.searchWrap, { borderBottomColor: colors.border }]}>
         <TextInput
-          style={s.search}
+          style={[s.search, { backgroundColor: colors.inputBg, color: colors.inputText }]}
           value={query}
           onChangeText={setQuery}
           placeholder="ابحث بالاسم أو الرقم الوظيفي"
@@ -78,12 +77,12 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
       {loading ? (
         <View style={s.list}>
           {[0, 1, 2].map((i) => (
-            <EmployeeSkeleton key={i} />
+            <EmployeeSkeleton key={i} colors={colors} />
           ))}
         </View>
       ) : error ? (
         <View style={s.center}>
-          <Text style={s.centerText}>{error}</Text>
+          <Text style={[s.centerText, { color: colors.textMuted }]}>{error}</Text>
           <SolidButton
             label="إعادة المحاولة"
             tone="neutral"
@@ -98,8 +97,8 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <View style={s.emptyContainer}>
-              <Icon name="users" size={32} color={colors.textFaint} accessible={false} />
-              <Text style={s.empty}>
+              <Icon name="users" size={32} color={colors.textMuted} accessible={false} />
+              <Text style={[s.empty, { color: colors.textMuted }]}>
                 {query ? 'لا نتائج مطابقة.' : 'لا يوجد موظفون في هذا الموقع.'}
               </Text>
             </View>
@@ -109,16 +108,21 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
               onPress={() => onPick?.(item)}
               disabled={!onPick}
               accessibilityRole={onPick ? 'button' : 'text'}
-              style={({ pressed }) => [s.row, pressed && onPick && s.rowPressed]}
+              card
+              style={({ pressed }) => [
+                s.row,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                pressed && onPick && { backgroundColor: colors.background },
+              ]}
             >
-              <View style={s.avatar}>
-                <Text style={s.avatarText}>{initials(item.name)}</Text>
+              <View style={[s.avatar, { backgroundColor: colors.tintBrand }]}>
+                <Text style={[s.avatarText, { color: colors.brandText }]}>{initials(item.name)}</Text>
               </View>
               <View style={s.rowText}>
-                <Text style={s.rowName} numberOfLines={1}>
+                <Text style={[s.rowName, { color: colors.textPrimary }]} numberOfLines={1}>
                   {item.name}
                 </Text>
-                <Text style={s.rowMeta}>{item.employee_number}</Text>
+                <Text style={[s.rowMeta, { color: colors.textMuted }]}>{item.employee_number}</Text>
               </View>
             </Pressable>
           )}
@@ -133,32 +137,28 @@ function initials(name: string) {
   return parts.slice(0, 2).map((p) => p[0]).join(' ')
 }
 
-function EmployeeSkeleton() {
+function EmployeeSkeleton({ colors }: { colors: { surface: string; border: string; surfaceElevated: string } }) {
   return (
-    <Pressable style={s.skeletonRow} accessibilityRole="button">
-      <View style={s.skeletonAvatar} />
+    <View style={[s.skeletonRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[s.skeletonAvatar, { backgroundColor: colors.surfaceElevated }]} />
       <View style={s.skeletonText}>
-        <View style={s.skeletonLine} />
-        <View style={[s.skeletonLine, { width: '60%' }]} />
+        <View style={[s.skeletonLine, { backgroundColor: colors.surfaceElevated }]} />
+        <View style={[s.skeletonLine, { width: '60%', backgroundColor: colors.surfaceElevated }]} />
       </View>
-    </Pressable>
+    </View>
   )
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
+  screen: { flex: 1 },
   searchWrap: {
     padding: spacing.lg,
-    backgroundColor: colors.header,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderSoft,
   },
   search: {
     height: 48,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
-    backgroundColor: colors.inputBg,
-    color: colors.inputText,
     fontSize: font.size.lg,
     fontFamily: font.family,
     textAlign: 'right',
@@ -168,36 +168,29 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.lg,
     padding: spacing.md,
     minHeight: 64,
   },
-  rowPressed: { backgroundColor: colors.cardRaised },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.tealSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: colors.tealBright,
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
   },
   rowText: { flex: 1 },
   rowName: {
-    color: colors.text,
     fontSize: font.size.base,
     fontFamily: font.familyMedium,
     textAlign: 'right',
   },
   rowMeta: {
-    color: colors.textFaint,
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
@@ -211,7 +204,6 @@ const s = StyleSheet.create({
     padding: spacing.xl,
   },
   centerText: {
-    color: colors.textMuted,
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
@@ -221,9 +213,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.lg,
     padding: spacing.md,
     minHeight: 64,
@@ -233,13 +223,11 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.cardRaised,
   },
   skeletonText: { flex: 1 },
   skeletonLine: {
     height: 14,
     borderRadius: 4,
-    backgroundColor: colors.cardRaised,
     marginBottom: 4,
   },
   emptyContainer: {
@@ -248,7 +236,6 @@ const s = StyleSheet.create({
     gap: spacing.md,
   },
   empty: {
-    color: colors.textFaint,
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',

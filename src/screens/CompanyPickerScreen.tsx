@@ -1,6 +1,5 @@
 import React from 'react'
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,15 +7,10 @@ import {
 } from 'react-native'
 import type { CompanyCard } from '../api/types'
 import { Banner } from '../components/ui'
-import { colors, font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
+import { PressableScale as Pressable } from '../components/ui/PressableScale'
+import { useTheme } from '../theme/ThemeProvider'
+import { font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
 
-/**
- * The company step of a multi-company login.
- *
- * It appears only when the identity may enter more than one company — the
- * backend answers the login with a `selection_token` instead of a token pair.
- * The picked `id` is an opaque public id and goes back verbatim.
- */
 export default function CompanyPickerScreen({
   companies,
   busy,
@@ -30,11 +24,12 @@ export default function CompanyPickerScreen({
   onPick: (companyId: string) => void
   onBack: () => void
 }) {
+  const { colors } = useTheme()
   return (
     <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
       <View style={s.head}>
-        <Text style={s.title}>اختر الشركة</Text>
-        <Text style={s.sub}>
+        <Text style={[s.title, { color: colors.textPrimary }]}>اختر الشركة</Text>
+        <Text style={[s.sub, { color: colors.textSecondary }]}>
           حسابك مرتبط بأكثر من شركة. اختر الشركة التي تريد العمل عليها الآن.
         </Text>
       </View>
@@ -53,21 +48,25 @@ export default function CompanyPickerScreen({
               accessibilityRole="button"
               accessibilityLabel={name}
               accessibilityState={{ disabled: busy, busy }}
-              style={({ pressed }) => [s.row, pressed && !busy && s.rowPressed, busy && s.rowDim]}
+              card
+              style={[
+                s.row,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                busy && s.rowDim,
+              ]}
             >
-              <View style={s.dot} />
+              <View style={[s.dot, { backgroundColor: colors.brand }]} />
               <View style={s.rowText}>
-                <Text style={s.name} numberOfLines={1}>
+                <Text style={[s.name, { color: colors.textPrimary }]} numberOfLines={1}>
                   {name}
                 </Text>
                 {secondary ? (
-                  <Text style={s.meta} numberOfLines={1}>
+                  <Text style={[s.meta, { color: colors.textMuted }]} numberOfLines={1}>
                     {secondary}
                   </Text>
                 ) : null}
               </View>
-              {/* In RTL a left-pointing chevron reads as "onward". */}
-              <Text style={s.chevron}>‹</Text>
+              <Text style={[s.chevron, { color: colors.textMuted }]}>‹</Text>
             </Pressable>
           )
         })}
@@ -79,7 +78,7 @@ export default function CompanyPickerScreen({
         accessibilityRole="button"
         style={s.back}
       >
-        <Text style={s.backText}>رجوع لتعديل بيانات الدخول</Text>
+        <Text style={[s.backText, { color: colors.textMuted }]}>رجوع لتعديل بيانات الدخول</Text>
       </Pressable>
     </ScrollView>
   )
@@ -88,9 +87,11 @@ export default function CompanyPickerScreen({
 const s = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 22, gap: spacing.lg },
   head: { alignItems: 'center', gap: spacing.sm },
-  title: { color: colors.text, fontSize: 24, fontFamily: font.familyBold },
+  title: {
+    fontSize: 24,
+    fontFamily: font.familyBold,
+  },
   sub: {
-    color: colors.textMuted,
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
@@ -104,41 +105,33 @@ const s = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
-    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.lg,
   },
-  rowPressed: { backgroundColor: colors.cardRaised },
   rowDim: { opacity: 0.5 },
   dot: {
     width: 10,
     height: 10,
     borderRadius: radius.pill,
-    backgroundColor: colors.teal,
   },
   rowText: { flex: 1, gap: 2 },
   name: {
-    color: colors.text,
     fontSize: font.size.xl,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
   },
   meta: {
-    color: colors.textMuted,
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
   },
   chevron: {
-    color: colors.textFaint,
     fontSize: 26,
     lineHeight: 30,
     fontFamily: font.family,
   },
   back: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
   backText: {
-    color: colors.textFaint,
     fontSize: font.size.md,
     fontFamily: font.family,
   },

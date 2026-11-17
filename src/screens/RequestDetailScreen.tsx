@@ -19,14 +19,13 @@ import {
   TypeBadge,
 } from '../components/ui'
 import { Icon } from '../components/Icon'
-import { colors, elevation, font, radius, spacing } from '../theme/tokens'
+import { useTheme } from '../theme/ThemeProvider'
+import { font, radius, spacing } from '../theme/tokens'
 
 interface Props {
   requestId: string
   onBack: () => void
-  /** Called after a successful decision so the inbox can drop the row. */
   onDecided: (id: string) => void
-  /** Lets the navigator warn before a hardware back drops a written reason. */
   onUnsavedChange?: (dirty: boolean) => void
 }
 
@@ -36,6 +35,7 @@ export default function RequestDetailScreen({
   onDecided,
   onUnsavedChange,
 }: Props) {
+  const { colors } = useTheme()
   const [data, setData] = useState<ApprovalRequestDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -45,13 +45,7 @@ export default function RequestDetailScreen({
   const [submitting, setSubmitting] = useState<'approve' | 'reject' | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  /**
-   * One key per user intent, not per HTTP attempt. If the network drops and
-   * the user taps again, the same key goes out and the server returns the
-   * first result instead of deducting a leave balance twice.
-   */
   const idemKey = useRef(newIdempotencyKey())
-  /** Lets the state-conflict notice stay on screen before the inbox refreshes. */
   const conflictTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const dirty = mode === 'rejecting' && reason.trim().length > 0
@@ -64,7 +58,6 @@ export default function RequestDetailScreen({
       if (conflictTimer.current) clearTimeout(conflictTimer.current)
     }
   }, [])
-
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -93,18 +86,12 @@ export default function RequestDetailScreen({
         idemKey.current,
       )
       onDecided(requestId)
-      // A definite server answer: rotate so the next tap is a new intent.
       idemKey.current = newIdempotencyKey()
     } catch (e) {
       setActionError(messageFor(e))
-      // Keep the same key after a network error or a client-side timeout so a
-      // retry reuses it. Rotate only on a definite server answer (4xx/5xx
-      // with a code).
       if (e instanceof ApiFailure && e.code !== 'timeout') {
         idemKey.current = newIdempotencyKey()
       }
-      // Someone else decided this request while the screen was open, so the
-      // row in the inbox is stale. Say so, then refresh it automatically.
       if (e instanceof ApiFailure && e.code === 'state_conflict') {
         conflictTimer.current = setTimeout(() => onDecided(requestId), 1800)
       }
@@ -115,13 +102,13 @@ export default function RequestDetailScreen({
 
   if (loading) {
     return (
-      <View style={s.screen}>
+      <View style={[s.screen, { backgroundColor: colors.background }]}>
         <ScreenHeader title="تفاصيل الطلب" onBack={onBack} />
         <View style={s.skeletonContainer}>
-          <View style={s.skeletonLine} />
-          <View style={[s.skeletonLine, { width: '40%' }]} />
-          <View style={s.skeletonLine} />
-          <View style={[s.skeletonLine, { width: '60%' }]} />
+          <View style={[s.skeletonLine, { backgroundColor: colors.surfaceElevated }]} />
+          <View style={[s.skeletonLine, { width: '40%', backgroundColor: colors.surfaceElevated }]} />
+          <View style={[s.skeletonLine, { backgroundColor: colors.surfaceElevated }]} />
+          <View style={[s.skeletonLine, { width: '60%', backgroundColor: colors.surfaceElevated }]} />
         </View>
       </View>
     )
@@ -129,10 +116,10 @@ export default function RequestDetailScreen({
 
   if (error || !data) {
     return (
-      <View style={s.screen}>
+      <View style={[s.screen, { backgroundColor: colors.background }]}>
         <ScreenHeader title="تفاصيل الطلب" onBack={onBack} />
         <View style={s.center}>
-          <Text style={s.centerText}>{error}</Text>
+          <Text style={[s.centerText, { color: colors.textMuted }]}>{error}</Text>
           <SolidButton label="إعادة المحاولة" tone="neutral" onPress={load} />
         </View>
       </View>
@@ -144,24 +131,24 @@ export default function RequestDetailScreen({
 
   return (
     <KeyboardAvoidingView
-      style={s.screen}
+      style={[s.screen, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScreenHeader
         title="تفاصيل الطلب"
         onBack={onBack}
-        right={<StatusPill status={data.status} />}
+        right={<StatusPill status={data.status} colors={colors} />}
       />
 
       <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
         <Card>
           <View style={s.employeeRow}>
-            <View style={s.avatar}>
-              <Text style={s.avatarText}>{initials(data.employee.full_name_ar)}</Text>
+            <View style={[s.avatar, { backgroundColor: colors.tintBrand }]}>
+              <Text style={[s.avatarText, { color: colors.brandText }]}>{initials(data.employee.full_name_ar)}</Text>
             </View>
             <View style={s.employeeText}>
-              <Text style={s.employeeName}>{data.employee.full_name_ar}</Text>
-              <Text style={s.employeeMeta}>{data.employee.employee_number}</Text>
+              <Text style={[s.employeeName, { color: colors.textPrimary }]}>{data.employee.full_name_ar}</Text>
+              <Text style={[s.employeeMeta, { color: colors.textMuted }]}>{data.employee.employee_number}</Text>
             </View>
             <TypeBadge type={data.request_type} />
           </View>
@@ -171,7 +158,7 @@ export default function RequestDetailScreen({
 
         {data.actions.length > 0 ? (
           <Card>
-            <Text style={s.sectionLabel}>سجل الاعتماد</Text>
+            <Text style={[s.sectionLabel, { color: colors.textMuted }]}>سجل الاعتماد</Text>
             {data.actions.map((a) => (
               <View key={a.id} style={s.timelineRow}>
                 <View
@@ -179,16 +166,16 @@ export default function RequestDetailScreen({
                     s.dot,
                     {
                       backgroundColor:
-                        a.decision === 'approved' ? colors.success : colors.danger,
+                        a.decision === 'approved' ? colors.success : colors.crimson,
                     },
                   ]}
                 />
                 <View style={s.timelineText}>
-                  <Text style={s.timelineTitle}>
+                  <Text style={[s.timelineTitle, { color: colors.textPrimary }]}>
                     {a.decision === 'approved' ? 'اعتمده' : 'رفضه'} {a.actor_name}
                     {a.client_source === 'app' ? ' — من التطبيق' : ''}
                   </Text>
-                  {a.reason ? <Text style={s.timelineReason}>{a.reason}</Text> : null}
+                  {a.reason ? <Text style={[s.timelineReason, { color: colors.textMuted }]}>{a.reason}</Text> : null}
                 </View>
               </View>
             ))}
@@ -199,9 +186,9 @@ export default function RequestDetailScreen({
 
         {mode === 'rejecting' ? (
           <Card>
-            <Text style={s.sectionLabel}>سبب الرفض</Text>
+            <Text style={[s.sectionLabel, { color: colors.textMuted }]}>سبب الرفض</Text>
             <TextInput
-              style={s.reasonInput}
+              style={[s.reasonInput, { backgroundColor: colors.inputBg, color: colors.inputText }]}
               value={reason}
               onChangeText={setReason}
               multiline
@@ -210,7 +197,7 @@ export default function RequestDetailScreen({
               placeholder="اكتب السبب — يظهر لمقدّم الطلب"
               placeholderTextColor={colors.inputPlaceholder}
             />
-            <Text style={s.reasonHint}>السبب إلزامي عند الرفض.</Text>
+            <Text style={[s.reasonHint, { color: colors.textMuted }]}>السبب إلزامي عند الرفض.</Text>
           </Card>
         ) : null}
 
@@ -218,7 +205,7 @@ export default function RequestDetailScreen({
       </ScrollView>
 
       {pending ? (
-        <View style={s.actions}>
+        <View style={[s.actions, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
           {mode === 'idle' ? (
             <>
               <SolidButton
@@ -266,12 +253,12 @@ export default function RequestDetailScreen({
   )
 }
 
-function StatusPill({ status }: { status: ApprovalRequestDetail['status'] }) {
+function StatusPill({ status, colors }: { status: ApprovalRequestDetail['status']; colors: any }) {
   const map = {
-    pending: { bg: colors.warningSurface, fg: colors.warning, label: 'منتظر قرارك' },
-    approved: { bg: colors.successSurface, fg: colors.success, label: 'معتمَد' },
-    rejected: { bg: colors.dangerSurface, fg: colors.danger, label: 'مرفوض' },
-    cancelled: { bg: colors.cardRaised, fg: colors.textFaint, label: 'ملغي' },
+    pending: { bg: colors.tintCrimson, fg: colors.crimson, label: 'منتظر قرارك' },
+    approved: { bg: colors.tintSuccess, fg: colors.success, label: 'معتمَد' },
+    rejected: { bg: colors.tintCrimson, fg: colors.crimson, label: 'مرفوض' },
+    cancelled: { bg: colors.surfaceElevated, fg: colors.textMuted, label: 'ملغي' },
   }[status]
   return (
     <View style={[s.pill, { backgroundColor: map.bg }]}>
@@ -286,7 +273,7 @@ function initials(name: string) {
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
+  screen: { flex: 1 },
   body: { padding: spacing.lg, gap: spacing.md },
   center: {
     flex: 1,
@@ -302,10 +289,8 @@ const s = StyleSheet.create({
   skeletonLine: {
     height: 16,
     borderRadius: 4,
-    backgroundColor: colors.cardRaised,
   },
   centerText: {
-    color: colors.textMuted,
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
@@ -316,31 +301,26 @@ const s = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: radius.lg,
-    backgroundColor: colors.tealSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: colors.tealBright,
     fontSize: font.size.xl,
     fontFamily: font.familySemiBold,
   },
   employeeText: { flex: 1 },
   employeeName: {
-    color: colors.text,
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
   },
   employeeMeta: {
-    color: colors.textMuted,
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
     marginTop: 3,
   },
   sectionLabel: {
-    color: colors.textFaint,
     fontSize: font.size.sm,
     fontFamily: font.familyMedium,
     textAlign: 'right',
@@ -350,13 +330,11 @@ const s = StyleSheet.create({
   dot: { width: 9, height: 9, borderRadius: 5, marginTop: 6 },
   timelineText: { flex: 1 },
   timelineTitle: {
-    color: colors.textStrong,
     fontSize: font.size.md,
-    fontFamily: font.familyMedium,
+    fontFamily: font.familySemiBold,
     textAlign: 'right',
   },
   timelineReason: {
-    color: colors.textFaint,
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
@@ -367,15 +345,12 @@ const s = StyleSheet.create({
     minHeight: 92,
     padding: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.inputBg,
-    color: colors.inputText,
     fontSize: font.size.lg,
     fontFamily: font.family,
     textAlign: 'right',
     textAlignVertical: 'top',
   },
   reasonHint: {
-    color: colors.textFaint,
     fontSize: font.size.sm,
     fontFamily: font.family,
     textAlign: 'right',
@@ -386,9 +361,7 @@ const s = StyleSheet.create({
     gap: 11,
     padding: spacing.lg,
     paddingBottom: 22,
-    backgroundColor: colors.header,
     borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
   },
   flex1: { flex: 1 },
   flex2: { flex: 2 },

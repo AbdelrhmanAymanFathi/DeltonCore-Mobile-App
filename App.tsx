@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { ActivityIndicator, I18nManager, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native'
+import { I18nManager, StatusBar, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as SplashScreen from 'expo-splash-screen'
 import {
@@ -14,7 +14,11 @@ import LoginScreen from './src/screens/LoginScreen'
 import PasswordChangeRequiredScreen from './src/screens/PasswordChangeRequiredScreen'
 import AppNavigator from './src/navigation/AppNavigator'
 import { installMockApi } from './src/api/mock'
-import { colors, font } from './src/theme/tokens'
+import { MockIndicator } from './src/components/MockIndicator'
+import { StatusBarCover } from './src/components/StatusBarCover'
+import { ThemeProvider, useTheme } from './src/theme/ThemeProvider'
+import { font } from './src/theme/tokens'
+import { PressableScale } from './src/components/ui/PressableScale'
 
 // RTL must be forced before the first render. On Android this only takes full
 // effect after a restart, which is why it is set here and also declared in
@@ -26,6 +30,11 @@ if (!I18nManager.isRTL) {
 
 installMockApi()
 SplashScreen.preventAutoHideAsync().catch(() => {})
+
+function ThemeStatusBar() {
+  const { isDark } = useTheme()
+  return <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+}
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -42,52 +51,54 @@ export default function App() {
   if (!fontsLoaded) return null
 
   return (
-    // The inset provider has to be above every screen: the headers and the tab
-    // bar read the system bars' heights from it.
-    <SafeAreaProvider>
-      <AuthProvider>
-        <StatusBar barStyle="light-content" />
-        <Root />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ThemeStatusBar />
+          <Root />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ThemeProvider>
   )
 }
 
 function Root() {
   const { status, session, authError, retryAuth } = useAuth()
 
+  let screen: React.ReactNode
   if (status === 'loading') {
     if (authError) {
-      return (
+      screen = (
         <View style={s.splash}>
-          <ActivityIndicator color={colors.teal} />
-          <Pressable style={s.retry} onPress={retryAuth} accessibilityRole="button" accessibilityLabel="إعادة المحاولة">
+          <PressableScale style={s.retry} onPress={retryAuth} accessibilityRole="button" accessibilityLabel="إعادة المحاولة">
             <Text style={s.retryText}>إعادة المحاولة</Text>
-          </Pressable>
+          </PressableScale>
         </View>
       )
+    } else {
+      screen = <View style={s.splash} />
     }
-    return (
-      <View style={s.splash}>
-        <ActivityIndicator color={colors.teal} />
-      </View>
-    )
+  } else if (status === 'signedOut') {
+    screen = <LoginScreen />
+  } else if (session?.password_policy.force_change) {
+    screen = <PasswordChangeRequiredScreen />
+  } else {
+    screen = <AppNavigator />
   }
 
-  if (status === 'signedOut') return <LoginScreen />
-
-  // The server lets an expired password log in but flags it: every request
-  // would still work, yet the account is days from locking itself. There is
-  // no mobile password-change endpoint, so the app can only point at the web.
-  if (session?.password_policy.force_change) return <PasswordChangeRequiredScreen />
-
-  return <AppNavigator />
+  return (
+    <View style={s.root}>
+      {screen}
+      <StatusBarCover />
+      <MockIndicator />
+    </View>
+  )
 }
 
 const s = StyleSheet.create({
+  root: { flex: 1 },
   splash: {
     flex: 1,
-    backgroundColor: colors.page,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -96,12 +107,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: colors.cardRaised,
     borderWidth: 1,
-    borderColor: colors.borderRaised,
   },
   retryText: {
-    color: colors.tealBright,
     fontSize: font.size.base,
     fontFamily: font.familyMedium,
   },

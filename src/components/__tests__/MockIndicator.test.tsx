@@ -1,6 +1,15 @@
 import { render } from '@testing-library/react-native'
 import React from 'react'
 
+jest.mock('../../theme/ThemeProvider', () => ({
+  useTheme: () => ({ colors: require('../../theme/tokens').lightColors }),
+}))
+
+jest.mock('react-native-safe-area-context', () => ({
+  ...jest.requireActual('react-native-safe-area-context'),
+  useSafeAreaInsets: () => ({ top: 24, bottom: 0, left: 0, right: 0 }),
+}))
+
 jest.mock('../../api/mock', () => {
   let active = false
   return {

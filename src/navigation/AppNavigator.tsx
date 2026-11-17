@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, BackHandler, LayoutAnimation, Pressable, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, Alert, Animated, BackHandler, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import HomeScreen from '../screens/HomeScreen'
 import InboxScreen from '../screens/InboxScreen'
@@ -9,16 +9,9 @@ import PenaltyFlow from '../screens/PenaltyFlow'
 import { useAuth } from '../auth/AuthContext'
 import { useBadge } from '../hooks/useBadge'
 import { Icon } from '../components/Icon'
-import { colors, font, radius, spacing } from '../theme/tokens'
-
-/**
- * Navigation without react-navigation.
- *
- * Three tabs and two pushed screens do not need a navigation library, its
- * peer dependencies, or its native gesture setup. When this grows a deep
- * stack or deep links from notifications, swap it — the screens take plain
- * callback props precisely so that swap touches only this file.
- */
+import { PressableScale as Pressable } from '../components/ui/PressableScale'
+import { useTheme } from '../theme/ThemeProvider'
+import { font, radius, spacing } from '../theme/tokens'
 
 type Tab = 'home' | 'inbox' | 'employees'
 type Pushed =
@@ -27,28 +20,38 @@ type Pushed =
   | null
 
 export default function AppNavigator() {
+  const { colors, isDark } = useTheme()
   const { session } = useAuth()
   const { counts, refresh: refreshBadge } = useBadge()
   const insets = useSafeAreaInsets()
   const [tab, setTab] = useState<Tab>('home')
+  const [reduceMotion, setReduceMotion] = useState(false)
   const [pushed, setPushed] = useState<Pushed>(null)
-  /** Bumped to force the inbox to refetch after a decision. */
   const [inboxEpoch, setInboxEpoch] = useState(0)
-  /** True while a pushed screen holds edits it has not saved. */
   const dirtyRef = useRef(false)
-  /** Set by a pushed screen that has a nested screen of its own to close first. */
   const nestedBackRef = useRef<(() => void) | null>(null)
 
   const pending = counts?.pending_approvals_count ?? null
+  const switchTab = useCallback((next: Tab) => setTab(next), [])
 
-  /** A decision changes the count, so re-read it rather than wait for the tick. */
+  useEffect(() => {
+    let active = true
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) setReduceMotion(enabled)
+    })
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion)
+    return () => {
+      active = false
+      subscription.remove()
+    }
+  }, [])
+
   function afterWrite() {
     setInboxEpoch((n) => n + 1)
     setPushed(null)
     refreshBadge()
   }
 
-  /** Leaving a screen with unsaved input asks first: the reason text is real work. */
   const closePushed = useCallback(() => {
     if (dirtyRef.current) {
       Alert.alert('تجاهل التغييرات؟', 'لديك بيانات لم تُحفظ. الخروج الآن يعني فقدانها.', [
@@ -68,7 +71,6 @@ export default function AppNavigator() {
   }, [])
 
   useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     dirtyRef.current = false
     nestedBackRef.current = null
   }, [pushed, tab])
@@ -76,15 +78,12 @@ export default function AppNavigator() {
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (pushed === null) {
-        // A tab other than home goes home; home lets Android close the app.
         if (tab !== 'home') {
-          setTab('home')
+          switchTab('home')
           return true
         }
         return false
       }
-      // A nested screen (the penalty employee picker) closes first and loses
-      // nothing, so it bypasses the unsaved-edits question.
       const nested = nestedBackRef.current
       if (nested) {
         nested()
@@ -94,7 +93,7 @@ export default function AppNavigator() {
       return true
     })
     return () => sub.remove()
-  }, [pushed, tab, closePushed])
+  }, [pushed, tab, closePushed, switchTab])
 
   if (pushed?.screen === 'requestDetail') {
     return (
@@ -125,14 +124,14 @@ export default function AppNavigator() {
   const canApprove = session?.capabilities.can_approve ?? false
 
   return (
-    <View style={s.root}>
+    <View style={[s.root, { backgroundColor: colors.background }]}>
       <View style={s.content}>
         {tab === 'home' ? (
           <HomeScreen
             pendingCount={pending}
-            onOpenInbox={() => setTab('inbox')}
+            onOpenInbox={() => switchTab('inbox')}
             onOpenPenalty={() => setPushed({ screen: 'penalty' })}
-            onOpenEmployees={() => setTab('employees')}
+            onOpenEmployees={() => switchTab('employees')}
             onCompanyChanged={() => {
               setInboxEpoch((n) => n + 1)
               refreshBadge()
@@ -142,18 +141,37 @@ export default function AppNavigator() {
           <InboxScreen
             key={inboxEpoch}
             onOpenRequest={(id) => setPushed({ screen: 'requestDetail', id })}
+            onBack={() => switchTab('home')}
           />
         ) : (
-          <EmployeePickerScreen onBack={() => setTab('home')} />
+          <EmployeePickerScreen onBack={() => switchTab('home')} />
         )}
       </View>
 
-      <View style={[s.bar, { paddingBottom: insets.bottom + spacing.sm }]}>
+      <View style={[
+        s.bar,
+        {
+          marginHorizontal: spacing.md,
+          marginBottom: Math.max(insets.bottom, spacing.sm),
+          paddingBottom: spacing.sm,
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          ...(isDark ? {} : {
+            shadowColor: colors.brandDeep,
+            shadowOffset: { width: 0, height: 5 },
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
+            elevation: 5,
+          }),
+        },
+      ]}>
         <TabButton
           label="الرئيسية"
           active={tab === 'home'}
           icon="home"
-          onPress={() => setTab('home')}
+          onPress={() => switchTab('home')}
+          colors={colors}
+          reduceMotion={reduceMotion}
         />
         {canApprove ? (
           <TabButton
@@ -161,14 +179,18 @@ export default function AppNavigator() {
             active={tab === 'inbox'}
             icon="inbox"
             badge={pending}
-            onPress={() => setTab('inbox')}
+            onPress={() => switchTab('inbox')}
+            colors={colors}
+            reduceMotion={reduceMotion}
           />
         ) : null}
         <TabButton
           label="الموظفين"
           active={tab === 'employees'}
           icon="users"
-          onPress={() => setTab('employees')}
+          onPress={() => switchTab('employees')}
+          colors={colors}
+          reduceMotion={reduceMotion}
         />
       </View>
     </View>
@@ -181,14 +203,40 @@ function TabButton({
   badge,
   icon,
   onPress,
+  colors,
+  reduceMotion,
 }: {
   label: string
   active: boolean
   badge?: number | null
   icon?: string
   onPress: () => void
+  colors: {
+    brandText: string
+    tintBrand: string
+    textMuted: string
+    crimson: string
+    badgeCrimson: string
+    onCrimson: string
+    surface: string
+  }
+  reduceMotion: boolean
 }) {
   const showBadge = typeof badge === 'number' && badge > 0
+  const pillOpacity = useRef(new Animated.Value(active ? 1 : 0)).current
+
+  useEffect(() => {
+    if (reduceMotion) {
+      pillOpacity.setValue(active ? 1 : 0)
+      return
+    }
+    Animated.timing(pillOpacity, {
+      toValue: active ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start()
+  }, [active, pillOpacity, reduceMotion])
+
   return (
     <Pressable
       onPress={onPress}
@@ -201,35 +249,42 @@ function TabButton({
       <View style={s.tabLabelRow}>
         {icon ? (
           <View style={s.tabIconWrap}>
+            <Animated.View
+              pointerEvents="none"
+              style={[s.tabPill, { backgroundColor: colors.tintBrand, opacity: pillOpacity }]}
+            />
             <Icon
               name={icon}
               size={24}
-              color={active ? colors.teal : '#64748B'}
+              color={active ? colors.brandText : colors.textMuted}
               accessible={false}
             />
             {showBadge ? (
-              <View style={s.tabBadge}>
-                <Text style={s.tabBadgeText}>{badge > 99 ? '٩٩+' : badge}</Text>
+              <View style={[s.tabBadge, { backgroundColor: colors.badgeCrimson, borderColor: colors.surface }]}>
+                <Text style={[s.tabBadgeText, { color: colors.onCrimson }]}>{badge > 99 ? '99+' : badge.toLocaleString('ar-EG-u-nu-latn')}</Text>
               </View>
             ) : null}
           </View>
         ) : null}
-        <Text style={active ? s.tabTextActive : s.tabText}>{label}</Text>
+        <Text style={[
+          s.tabLabelBase,
+          active ? { color: colors.brandText, fontFamily: font.familyBold } : { color: colors.textMuted, fontFamily: font.familyMedium },
+        ]}>{label}</Text>
       </View>
     </Pressable>
   )
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.page },
+  root: { flex: 1 },
   content: { flex: 1 },
   bar: {
     flexDirection: 'row',
-    backgroundColor: colors.header,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-    minHeight: 64,
-    paddingBottom: 12,
+    minHeight: 72,
+    borderWidth: 1,
+    borderRadius: radius.xl + spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.xs,
   },
   tab: {
     flex: 1,
@@ -249,24 +304,36 @@ const s = StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -11 }],
   },
-  indicatorActive: { backgroundColor: colors.teal },
   tabIconWrap: {
     position: 'relative',
+    direction: 'ltr',
+    width: 42,
+    height: 34,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabPill: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: radius.pill,
   },
   tabBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: colors.danger,
+    top: -4,
+    right: -4,
     borderRadius: radius.pill,
     minWidth: 18,
     height: 18,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabBadgeText: {
-    color: colors.page,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: font.familyBold,
     textAlign: 'center',
   },
@@ -276,16 +343,8 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-  tabText: {
-    color: '#64748B',
+  tabLabelBase: {
     fontSize: font.size.sm,
-    fontFamily: font.familyMedium,
-    textAlign: 'center',
-  },
-  tabTextActive: {
-    color: colors.teal,
-    fontSize: font.size.sm,
-    fontFamily: font.familySemiBold,
     textAlign: 'center',
   },
 })

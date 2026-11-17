@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,15 +9,10 @@ import {
   View,
 } from 'react-native'
 import { Banner, Card, GradientButton } from '../components/ui'
-import { colors, font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
+import { PressableScale as Pressable } from '../components/ui/PressableScale'
+import { useTheme } from '../theme/ThemeProvider'
+import { font, MIN_TOUCH, radius, spacing } from '../theme/tokens'
 
-/**
- * The second factor, the step after the password was accepted.
- *
- * The password is never passed in here: the caller keeps it in memory and
- * replays the login with this code attached, so the secret never leaves the
- * credentials screen.
- */
 export default function TwoFactorScreen({
   username,
   busy,
@@ -32,6 +26,7 @@ export default function TwoFactorScreen({
   onBack: () => void
   onSubmit: (factor: { code: string; kind: 'totp' | 'backup' }) => void
 }) {
+  const { colors } = useTheme()
   const [useBackup, setUseBackup] = useState(false)
   const [code, setCode] = useState('')
 
@@ -45,17 +40,17 @@ export default function TwoFactorScreen({
 
   return (
     <KeyboardAvoidingView
-      style={s.flex}
+      style={[s.flex, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <Card style={s.card}>
           <View style={s.head}>
-            <View style={s.pill}>
-              <Text style={s.pillText}>التحقق بخطوتين</Text>
+            <View style={[s.pill, { backgroundColor: colors.tintBrand, borderColor: colors.brand }]}>
+              <Text style={[s.pillText, { color: colors.brandText }]}>التحقق بخطوتين</Text>
             </View>
-            <Text style={s.title}>أدخل رمز التحقق</Text>
-            <Text style={s.sub}>
+            <Text style={[s.title, { color: colors.textPrimary }]}>أدخل رمز التحقق</Text>
+            <Text style={[s.sub, { color: colors.textMuted }]}>
               {useBackup
                 ? `اكتب أحد الرموز الاحتياطية لحساب ${username}. يُستخدم مرة واحدة فقط.`
                 : `افتح تطبيق المصادقة وأدخل الرمز المكوَّن من 6 أرقام لحساب ${username}.`}
@@ -63,9 +58,9 @@ export default function TwoFactorScreen({
           </View>
 
           <View style={s.field}>
-            <Text style={s.label}>{useBackup ? 'الرمز الاحتياطي' : 'رمز التحقق'}</Text>
+            <Text style={[s.label, { color: colors.textSecondary }]}>{useBackup ? 'الرمز الاحتياطي' : 'رمز التحقق'}</Text>
             <TextInput
-              style={[s.input, useBackup && s.inputBackup]}
+              style={[s.input, { backgroundColor: colors.inputBg, color: colors.inputText }, useBackup && s.inputBackup]}
               value={code}
               onChangeText={(v) => setCode(useBackup ? v : v.replace(/[^0-9]/g, ''))}
               keyboardType={useBackup ? 'default' : 'number-pad'}
@@ -101,7 +96,7 @@ export default function TwoFactorScreen({
             accessibilityRole="button"
             style={s.toggle}
           >
-            <Text style={s.toggleText}>
+            <Text style={[s.toggleText, { color: colors.brandText }]}>
               {useBackup ? 'استخدم رمز التطبيق' : 'استخدم رمزًا احتياطيًا'}
             </Text>
           </Pressable>
@@ -112,7 +107,7 @@ export default function TwoFactorScreen({
             accessibilityRole="button"
             style={s.toggle}
           >
-            <Text style={s.backText}>رجوع لتعديل بيانات الدخول</Text>
+            <Text style={[s.backText, { color: colors.textMuted }]}>رجوع لتعديل بيانات الدخول</Text>
           </Pressable>
         </Card>
       </ScrollView>
@@ -121,7 +116,7 @@ export default function TwoFactorScreen({
 }
 
 const s = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.page },
+  flex: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 22 },
   card: { gap: spacing.xl },
   head: { alignItems: 'center', gap: spacing.md },
@@ -129,19 +124,18 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: colors.tealSurface,
     borderWidth: 1,
-    borderColor: colors.tealBorder,
   },
   pillText: {
-    color: colors.tealBright,
     fontSize: 10,
     letterSpacing: 1.4,
     fontFamily: font.familySemiBold,
   },
-  title: { color: colors.text, fontSize: 22, fontFamily: font.familyBold },
+  title: {
+    fontSize: 22,
+    fontFamily: font.familyBold,
+  },
   sub: {
-    color: colors.textMuted,
     fontSize: font.size.base,
     fontFamily: font.family,
     textAlign: 'center',
@@ -149,7 +143,6 @@ const s = StyleSheet.create({
   },
   field: { gap: spacing.sm },
   label: {
-    color: colors.textStrong,
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
@@ -159,8 +152,6 @@ const s = StyleSheet.create({
     height: 58,
     paddingHorizontal: 15,
     borderRadius: 11,
-    backgroundColor: colors.inputBg,
-    color: colors.inputText,
     fontSize: 24,
     letterSpacing: 8,
     textAlign: 'center',
@@ -173,12 +164,10 @@ const s = StyleSheet.create({
   },
   toggle: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
   toggleText: {
-    color: colors.tealBright,
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
   },
   backText: {
-    color: colors.textFaint,
     fontSize: font.size.md,
     fontFamily: font.family,
   },

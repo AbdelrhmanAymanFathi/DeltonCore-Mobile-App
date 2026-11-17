@@ -1,6 +1,10 @@
 import { render } from '@testing-library/react-native'
 import React from 'react'
 
+jest.mock('../../theme/ThemeProvider', () => ({
+  useTheme: () => ({ colors: require('../../theme/tokens').lightColors }),
+}))
+
 import { Icon } from '../Icon'
 
 describe('Icon component', () => {
@@ -10,7 +14,7 @@ describe('Icon component', () => {
   })
 
   it('renders with custom size and color', async () => {
-    const result = await render(<Icon name="home" size={24} color="#2DD4BF" />)
+    const result = await render(<Icon name="home" size={24} color="teal" />)
     expect(result.toJSON()).toBeTruthy()
   })
 
