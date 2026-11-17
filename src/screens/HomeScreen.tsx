@@ -346,7 +346,6 @@ export default function HomeScreen({
         duration: 180,
         useNativeDriver: false,
       }).start()
-    closeAccountMenu()
     setMode(next)
   }
 
@@ -680,12 +679,12 @@ export default function HomeScreen({
                 ]}
               />
               <Pressable
-                onPress={() => setAppearance('system')}
+                onPress={() => setAppearance('dark')}
                 accessibilityRole="button"
-                accessibilityState={{ selected: mode === 'system' }}
+                accessibilityState={{ selected: mode === 'dark' }}
                 style={s.segmentItem}
               >
-                <Text style={[s.segmentText, { color: mode === 'system' ? colors.onBrand : colors.textSecondary }]}>تلقائي</Text>
+                <Text style={[s.segmentText, { color: mode === 'dark' ? colors.onBrand : colors.textSecondary }]}>داكن</Text>
               </Pressable>
               <Pressable
                 onPress={() => setAppearance('light')}
@@ -696,12 +695,12 @@ export default function HomeScreen({
                 <Text style={[s.segmentText, { color: mode === 'light' ? colors.onBrand : colors.textSecondary }]}>فاتح</Text>
               </Pressable>
               <Pressable
-                onPress={() => setAppearance('dark')}
+                onPress={() => setAppearance('system')}
                 accessibilityRole="button"
-                accessibilityState={{ selected: mode === 'dark' }}
+                accessibilityState={{ selected: mode === 'system' }}
                 style={s.segmentItem}
               >
-                <Text style={[s.segmentText, { color: mode === 'dark' ? colors.onBrand : colors.textSecondary }]}>داكن</Text>
+                <Text style={[s.segmentText, { color: mode === 'system' ? colors.onBrand : colors.textSecondary }]}>تلقائي</Text>
               </Pressable>
             </View>
           </View>
@@ -1025,7 +1024,7 @@ const s = StyleSheet.create({
   segmentedControl: {
     width: '100%',
     flexDirection: 'row',
-    direction: 'rtl',
+    direction: 'ltr',
     borderRadius: radius.md,
     overflow: 'hidden',
     height: 40,
