@@ -26,7 +26,11 @@ export default function CompanyPickerScreen({
 }) {
   const { colors } = useTheme()
   return (
-    <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={s.scroll}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       <View style={s.head}>
         <Text style={[s.title, { color: colors.textPrimary }]}>اختر الشركة</Text>
         <Text style={[s.sub, { color: colors.textSecondary }]}>

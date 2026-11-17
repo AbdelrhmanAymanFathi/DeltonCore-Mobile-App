@@ -30,6 +30,7 @@ export default function PasswordChangeRequiredScreen() {
           s.scroll,
           { paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + spacing.xxl },
         ]}
+        showsVerticalScrollIndicator={false}
       >
         <Card style={s.card}>
           <View style={s.head}>

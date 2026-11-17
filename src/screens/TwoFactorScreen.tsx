@@ -43,7 +43,11 @@ export default function TwoFactorScreen({
       style={[s.flex, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <Card style={s.card}>
           <View style={s.head}>
             <View style={[s.pill, { backgroundColor: colors.tintBrand, borderColor: colors.brand }]}>

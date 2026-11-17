@@ -380,6 +380,7 @@ export default function HomeScreen({
     <ScrollView
       style={[s.screen, { backgroundColor: colors.background }]}
       contentContainerStyle={[s.content, { paddingBottom: 88 + 24 + insets.bottom }]}
+      showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

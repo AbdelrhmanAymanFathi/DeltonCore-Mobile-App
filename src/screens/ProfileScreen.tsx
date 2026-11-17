@@ -35,6 +35,7 @@ export default function ProfileScreen({ onBack }: Props) {
           s.content,
           { paddingBottom: insets.bottom + spacing.xxl },
         ]}
+        showsVerticalScrollIndicator={false}
       >
         <Card style={s.identityCard}>
           <View style={[s.avatar, { backgroundColor: colors.tintBrand }]}>

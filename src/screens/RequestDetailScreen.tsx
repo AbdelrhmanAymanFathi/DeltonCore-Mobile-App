@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -8,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiFailure, api, messageFor, newIdempotencyKey } from '../api/client'
 import type { ApprovalRequestDetail } from '../api/types'
 import {
@@ -36,6 +38,7 @@ export default function RequestDetailScreen({
   onUnsavedChange,
 }: Props) {
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
   const [data, setData] = useState<ApprovalRequestDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,6 +50,16 @@ export default function RequestDetailScreen({
 
   const idemKey = useRef(newIdempotencyKey())
   const conflictTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null)
+
+  useEffect(() => {
+    if (mode !== 'rejecting') return
+    const eventName = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const subscription = Keyboard.addListener(eventName, () => {
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
+    })
+    return () => subscription.remove()
+  }, [mode])
 
   const dirty = mode === 'rejecting' && reason.trim().length > 0
   useEffect(() => {
@@ -132,7 +145,8 @@ export default function RequestDetailScreen({
   return (
     <KeyboardAvoidingView
       style={[s.screen, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={insets.top}
     >
       <ScreenHeader
         title="تفاصيل الطلب"
@@ -140,7 +154,12 @@ export default function RequestDetailScreen({
         right={<StatusPill status={data.status} colors={colors} />}
       />
 
-      <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={s.body}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+      >
         <Card>
           <View style={s.employeeRow}>
             <View style={[s.avatar, { backgroundColor: colors.tintBrand }]}>
