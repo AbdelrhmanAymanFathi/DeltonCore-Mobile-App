@@ -208,6 +208,7 @@ export default function InboxScreen({ onOpenRequest, onBack }: Props) {
         <FlatList
           data={rows}
           keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             s.list,
             { paddingBottom: 88 + 24 + insets.bottom },

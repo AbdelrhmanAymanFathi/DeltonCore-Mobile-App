@@ -159,6 +159,7 @@ export default function RequestDetailScreen({
         contentContainerStyle={s.body}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        showsVerticalScrollIndicator={false}
       >
         <Card>
           <View style={s.employeeRow}>

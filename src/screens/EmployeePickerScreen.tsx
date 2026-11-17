@@ -93,6 +93,7 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
         <FlatList
           data={rows}
           keyExtractor={(e) => String(e.id)}
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={s.list}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
