@@ -218,10 +218,10 @@ export default function PenaltyScreen({
                   </Text>
                 </View>
                 <View style={s.employeeText}>
-                  <Text style={[s.employeeName, { color: controlsDisabled ? colors.textMuted : colors.textPrimary }]} numberOfLines={1}>
+                  <Text style={[s.employeeName, { color: controlsDisabled ? colors.textMuted : colors.textPrimary }]} numberOfLines={2} ellipsizeMode="tail">
                     {pickedEmployee.name}
                   </Text>
-                  <Text style={[s.employeeNumber, { color: colors.textMuted }]}>{pickedEmployee.employee_number}</Text>
+                  <Text style={[s.employeeNumber, { color: colors.textMuted, writingDirection: 'ltr' }]}>{pickedEmployee.employee_number}</Text>
                 </View>
               </>
             ) : (
@@ -262,7 +262,7 @@ export default function PenaltyScreen({
                   <View style={[s.typeIcon, { backgroundColor: active ? colors.tintBrand : colors.surfaceElevated }]}>
                     <Icon name={icon} family="material-community" size={22} color={active ? colors.brandText : colors.textSecondary} accessible={false} />
                   </View>
-                  <Text style={[s.typeName, { color: controlsDisabled ? colors.textMuted : colors.textPrimary }]} numberOfLines={2}>
+                  <Text style={[s.typeName, { color: controlsDisabled ? colors.textMuted : colors.textPrimary }]} numberOfLines={2} ellipsizeMode="tail">
                     {type.name}
                   </Text>
                   {active ? (
@@ -309,8 +309,7 @@ export default function PenaltyScreen({
           <View style={s.daysHintRow}>
             <Text style={[s.daysHint, { color: colors.textSecondary }]}>
               {t("penalty.daysHint", {
-                count: formatNumber(days),
-                unit: tCount(days, DAY_FORMS),
+                duration: tCount(days, DAY_FORMS),
               })}
             </Text>
             {overCap ? (
@@ -516,7 +515,7 @@ const s = StyleSheet.create({
     position: 'relative',
   },
   typeIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  typeName: { flex: 1, textAlign: 'right', fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.familyMedium, ...baseText },
+  typeName: { flex: 1, textAlign: 'right', fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.familySemiBold, ...baseText },
   selectedCheck: { position: 'absolute', top: spacing.xs, right: spacing.xs, width: 18, height: 18, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xl },
   stepperButton: { width: 44, height: 44, borderWidth: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },

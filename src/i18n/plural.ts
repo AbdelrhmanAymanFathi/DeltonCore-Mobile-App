@@ -1,13 +1,3 @@
-/**
- * الجمع العربي لمعدادات واجهة المستخدم.
- *
- * القواعد المطبقة:
- * - 0: صيغة العدامة الممررة صراحةً ("لا يوجد ...", "لا توجد ...")
- * - 1: المفرد بدون رقم ("يوم", "ساعة", "شهر", "طلب")
- * - 2: المثنى بدون رقم ("يومين", "ساعتين", "شهرين", "طلبين")
- * - 3 إلى 10: "{n} جمع+tاء" ("3 أيام", "10 طلبات")
- * - 11 فأكثر: "{n} مفرد" ("11 يوم", "100 طلب")
- */
 export type PluralForms = {
   zero?: string
   one: string
@@ -16,29 +6,30 @@ export type PluralForms = {
   many: string
 }
 
+export function isolateLtr(value: string): string {
+  return `\u2066${value}\u2069`
+}
+
 export function pluralAr(n: number, forms: PluralForms): string {
-  if (n === 0) return forms.zero ?? forms.one
-  if (n === 1) return forms.one
-  if (n === 2) return forms.two
-  if (n >= 3 && n <= 10) return forms.few
-  return forms.many
+  const count = Math.trunc(n)
+  if (count <= 0) return forms.zero ?? 'لا يوجد'
+  if (count === 1) return forms.one
+  if (count === 2) return forms.two
+  if (count <= 10) return `${isolateLtr(String(count))} ${forms.few}`
+  return `${isolateLtr(String(count))} ${forms.many}`
 }
 
 /**
  * مجموعات كلمات العداد الجاهزة للشاشات المتكررة، تُمرَّر لـ tCount.
  */
-export const DAY_FORMS = { zero: 'لا يوجد', one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' }
-export const REQUEST_FORMS = { zero: 'لا يوجد', one: 'طلب', two: 'طلبين', few: 'طلبات', many: 'طلب' }
-export const MONTH_FORMS = { zero: 'لا يوجد', one: 'شهر', two: 'شهرين', few: 'شهور', many: 'شهر' }
-export const HOUR_FORMS = { zero: 'لا يوجد', one: 'ساعة', two: 'ساعتين', few: 'ساعات', many: 'ساعة' }
-export const SECOND_FORMS = { zero: 'لا توجد', one: 'ثانية', two: 'ثانيتين', few: 'ثواني', many: 'ثانية' }
+export const DAY_FORMS = { zero: 'لا توجد أيام', one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' }
+export const REQUEST_FORMS = { zero: 'لا توجد طلبات', one: 'طلب', two: 'طلبين', few: 'طلبات', many: 'طلب' }
+export const EMPLOYEE_FORMS = { zero: 'لا يوجد موظفون', one: 'موظف', two: 'موظفان', few: 'موظفين', many: 'موظف' }
+export const MONTH_FORMS = { zero: 'لا توجد شهور', one: 'شهر', two: 'شهرين', few: 'شهور', many: 'شهر' }
+export const HOUR_FORMS = { zero: 'لا توجد ساعات', one: 'ساعة', two: 'ساعتين', few: 'ساعات', many: 'ساعة' }
+export const SECOND_FORMS = { zero: 'لا توجد ثوان', one: 'ثانية', two: 'ثانيتين', few: 'ثوان', many: 'ثانية' }
 
 /**
  * عدد مع كلمته مضبوطة بالجمع العربي، من غير رقم للصفر حسب الحالات.
  */
-export function countAr(n: number, forms: PluralForms): string {
-  const word = pluralAr(n, forms)
-  if (n === 0) return forms.zero ?? word
-  if (n === 1 || n === 2) return word
-  return `${n} ${word}`
-}
+export const countAr = pluralAr

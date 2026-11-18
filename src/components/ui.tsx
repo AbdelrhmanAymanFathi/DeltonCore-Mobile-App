@@ -130,6 +130,7 @@ export function Button({
                 },
               ]}
               numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {success ? t("common.saved") : title}
             </Text>
@@ -246,7 +247,7 @@ export function ScreenHeader({
           <Icon name="chevron-right" size={24} color={colors.textSecondary} accessible={false} />
         </PressableScale>
       ) : null}
-      <Text style={{ flex: 1, color: colors.textPrimary, fontSize: font.size.title, fontFamily: font.familySemiBold, textAlign: 'right', lineHeight: lineHeightFor(font.size.title), ...baseText }} numberOfLines={1}>
+      <Text style={{ flex: 1, color: colors.textPrimary, fontSize: font.size.title, fontFamily: font.familySemiBold, textAlign: 'right', lineHeight: lineHeightFor(font.size.title), ...baseText }} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
       {right}
@@ -303,7 +304,7 @@ export function DetailRows({
           </Text>
           <Text
             style={[
-              { flexShrink: 1, color: colors.textPrimary, fontSize: font.size.base, fontFamily: font.familyMedium, textAlign: 'left', maxWidth: '62%', lineHeight: lineHeightFor(font.size.base), ...baseText },
+              { flexShrink: 1, color: colors.textPrimary, fontSize: font.size.base, fontFamily: font.familySemiBold, textAlign: 'right', maxWidth: '62%', lineHeight: lineHeightFor(font.size.base), ...baseText },
               r.emphasis === 'good' && { color: colors.success },
               r.emphasis === 'bad' && { color: colors.crimson },
             ]}

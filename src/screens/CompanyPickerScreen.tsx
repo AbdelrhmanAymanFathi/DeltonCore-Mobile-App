@@ -62,11 +62,25 @@ export default function CompanyPickerScreen({
             >
               <View style={[s.dot, { backgroundColor: colors.brand }]} />
               <View style={s.rowText}>
-                <Text style={[s.name, { color: colors.textPrimary }]} numberOfLines={1}>
+                <Text
+                  style={[
+                    s.name,
+                    {
+                      color: colors.textPrimary,
+                      writingDirection: /[\u0600-\u06FF]/.test(name) ? 'rtl' : 'ltr',
+                    },
+                  ]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
                   {name}
                 </Text>
                 {secondary ? (
-                  <Text style={[s.meta, { color: colors.textMuted }]} numberOfLines={1}>
+                  <Text
+                    style={[s.meta, { color: colors.textMuted, writingDirection: 'ltr' }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
                     {secondary}
                   </Text>
                 ) : null}

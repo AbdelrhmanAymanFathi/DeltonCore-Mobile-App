@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 
 import appConfig from '../../app.json'
-import { t, tCount, formatDistance, SECOND_FORMS } from '../i18n'
+import { mapError, t } from '../i18n'
 import type {
   ApiError,
   BadgeCounts,
@@ -434,86 +434,5 @@ export const api = {
  * a factory yard can act on. Never show a raw `detail` from the server.
  */
 export function messageFor(err: unknown): string {
-  if (!(err instanceof ApiFailure)) {
-    return t('errors.noInternet')
-  }
-  const p = err.payload
-  switch (err.code) {
-    case 'invalid_credentials':
-      return t('errors.invalidCredentials')
-    case 'password_locked':
-      return t('errors.accountLocked')
-    case 'too_many_attempts': {
-      const seconds = (p.retry_after_seconds ?? 60) as number
-      return t('errors.tooManyAttempts', { seconds: tCount(seconds, SECOND_FORMS) })
-    }
-    case 'account_inactive':
-      return t('errors.accountInactive')
-    case 'no_employee_profile':
-      return t('errors.noEmployeeProfile')
-    case 'no_mobile_access':
-      return t('errors.noMobileAccess')
-    case 'two_factor_required':
-      return t('errors.twoFactorRequired')
-    case 'two_factor_invalid':
-      return t('errors.twoFactorInvalid')
-    case 'two_factor_enrollment_required':
-      return t('errors.twoFactorEnrollmentRequired')
-    case 'token_invalid':
-    case 'missing_refresh_token':
-    case 'invalid_refresh_token':
-    case 'unauthorized':
-      return t('errors.sessionExpired')
-    case 'device_id_required':
-      return t('errors.deviceNotRecognized')
-    case 'device_required':
-      return t('errors.deviceNotLinked')
-    case 'device_revoked':
-      return t('errors.deviceRevoked')
-    case 'no_company_access':
-      return t('errors.noCompanyAccess')
-    case 'COMPANY_REQUIRED':
-      return t('errors.companyRequired')
-    case 'COMPANY_FORBIDDEN':
-      return t('errors.companyForbidden')
-    case 'COMPANY_ARCHIVED':
-      return t('errors.companyArchived')
-    case 'COMPANY_UNAVAILABLE':
-      return t('errors.companyUnavailable')
-    case 'invalid_reason':
-      return t('errors.invalidReason')
-    case 'no_permission':
-      return t('errors.noPermission')
-    case 'state_conflict':
-      return t('errors.stateConflict')
-    case 'out_of_range':
-      return t('home.outOfRange', {
-        distance: formatDistance(p.gps_distance_meters ?? null),
-        allowed: formatDistance(p.allowed_radius_meters ?? null),
-      })
-    case 'gps_inaccurate':
-      return t('errors.gpsInaccurate')
-    case 'gps_unavailable':
-      return t('errors.locationNotAllowed')
-    case 'period_closed':
-      return t('errors.periodClosed')
-    case 'duplicate_punch':
-      return t('errors.duplicatePunch')
-    case 'already_checked_in':
-      return t('errors.alreadyCheckedIn')
-    case 'not_checked_in':
-      return t('errors.notCheckedIn')
-    case 'attendance_method_not_allowed':
-      return t('errors.attendanceMethodNotAllowed')
-    case 'location_mocked':
-      return t('errors.locationMocked')
-    case 'no_open_period':
-      return t('errors.noOpenPeriod')
-    case 'idempotency_key_reuse':
-      return t('errors.idempotencyReuse')
-    case 'timeout':
-      return t('errors.timeout')
-    default:
-      return t('errors.unexpected')
-  }
+  return mapError(err)
 }

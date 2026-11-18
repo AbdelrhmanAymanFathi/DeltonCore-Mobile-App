@@ -83,7 +83,7 @@ const s = StyleSheet.create({
   },
   text: {
     fontSize: font.size.sm,
-    fontFamily: font.familyMedium,
+    fontFamily: font.familySemiBold,
     textAlign: 'right',
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,

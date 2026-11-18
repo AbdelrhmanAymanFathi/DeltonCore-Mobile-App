@@ -171,7 +171,7 @@ const s = StyleSheet.create({
   },
   inputBackup: {
     fontSize: font.size.xl,
-    fontFamily: font.familyMedium,
+    fontFamily: font.familySemiBold,
     lineHeight: lineHeightFor(font.size.xl),
     ...baseText,
   },

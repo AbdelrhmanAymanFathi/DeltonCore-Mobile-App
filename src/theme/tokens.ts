@@ -141,7 +141,6 @@ export const radius = {
 
 export const font = {
   family: 'IBMPlexSansArabic_400Regular',
-  familyMedium: 'IBMPlexSansArabic_500Medium',
   familySemiBold: 'IBMPlexSansArabic_600SemiBold',
   familyBold: 'IBMPlexSansArabic_700Bold',
   size: {

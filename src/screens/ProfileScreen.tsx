@@ -57,7 +57,17 @@ export default function ProfileScreen({ onBack }: Props) {
               </View>
               <View style={s.fieldContent}>
                 <Text style={[s.fieldLabel, { color: colors.textMuted }]}>{field.label}</Text>
-                <Text style={[s.fieldValue, { color: colors.textPrimary }]}>{field.value}</Text>
+                <Text
+                  style={[
+                    s.fieldValue,
+                    {
+                      color: colors.textPrimary,
+                      writingDirection: /[\u0600-\u06FF]/.test(field.value) ? 'rtl' : 'ltr',
+                    },
+                  ]}
+                >
+                  {field.value}
+                </Text>
               </View>
             </View>
           ))}

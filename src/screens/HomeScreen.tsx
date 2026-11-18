@@ -36,7 +36,7 @@ import {
   lineHeightFor,
   baseText,
 } from '../theme/tokens'
-import { t, tCount, formatDateShort, formatTime12, formatNumber, formatDistance } from '../i18n'
+import { t, tCount, formatDateKey, formatDateShort, formatTime12, formatNumber, formatDistance } from '../i18n'
 import { DAY_FORMS, REQUEST_FORMS } from '../i18n/plural'
 
 const PASSWORD_WARN_DAYS = 7
@@ -199,7 +199,7 @@ export default function HomeScreen({
 
   const load = useCallback(async () => {
     if (!employeeId) return
-    const todayKey = new Date().toLocaleDateString('ar-EG-u-nu-latn')
+    const todayKey = formatDateKey(new Date())
     if (lastDateRef.current !== null && lastDateRef.current !== todayKey) {
       setToday(null)
       setTodayError(null)
@@ -233,7 +233,7 @@ export default function HomeScreen({
   useEffect(() => {
     if (!employeeId) return
     const timer = setInterval(() => {
-      const todayKey = new Date().toLocaleDateString('ar-EG-u-nu-latn')
+      const todayKey = formatDateKey(new Date())
       if (lastDateRef.current !== null && lastDateRef.current !== todayKey) {
         load()
       }
@@ -429,7 +429,17 @@ export default function HomeScreen({
           </Text>
           <View style={s.siteRow}>
             <Icon name="factory" family="material-community" size={16} color={colors.brand} accessible={false} />
-            <Text style={[s.siteName, { color: colors.textPrimary }]} numberOfLines={1}>
+            <Text
+              style={[
+                s.siteName,
+                {
+                  color: colors.textPrimary,
+                  writingDirection: /[\u0600-\u06FF]/.test(session?.site?.name_ar || companyName || '') ? 'rtl' : 'ltr',
+                },
+              ]}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
               {session?.site?.name_ar || companyName || ''}
             </Text>
           </View>
@@ -470,11 +480,13 @@ export default function HomeScreen({
             <View style={s.heroTop}>
               <View style={s.todayStatusWrap}>
                 <View style={[s.todayStatus, { backgroundColor: hasRegisteredToday ? colors.tintSuccess : colors.tintBrand }]}>
-                  <Text style={{ color: hasRegisteredToday ? colors.success : colors.brandText, fontFamily: font.familySemiBold, fontSize: font.size.xs }}>
+                  <Text style={{ color: hasRegisteredToday ? colors.success : colors.brandText, fontFamily: font.familySemiBold, fontSize: font.size.xs, lineHeight: lineHeightFor(font.size.xs), ...baseText }}>
                     {today === null
                       ? t("home.loading")
                       : hasRegisteredToday && today.last_punch === 'check_in'
-                        ? t("home.checkedIn")
+                        ? today.last_punch_at
+                          ? t("home.checkedInAt", { time: timeOf(today.last_punch_at) })
+                          : t("home.checkedIn")
                         : today?.last_punch === 'check_out'
                           ? t("home.checkedOut")
                           : t("home.notCheckedIn")}
@@ -559,7 +571,7 @@ export default function HomeScreen({
             {outcome?.kind === 'error' ? (
               <View style={[s.locationChip, { backgroundColor: colors.tintCrimson }]}>
                 <View style={[s.locationDot, { backgroundColor: colors.crimson }]} />
-                <Text style={[s.locationText, { color: colors.crimson }]} numberOfLines={2}>
+                <Text style={[s.locationText, { color: colors.crimson }]} numberOfLines={2} ellipsizeMode="tail">
                   {outcome.geofence
                     ? t("home.outOfRange", {
                         distance: formatDistance(outcome.geofence.distance),
@@ -571,14 +583,14 @@ export default function HomeScreen({
             ) : outcome?.kind === 'success' && outcome.res.location_status === 'verified' ? (
               <View style={[s.locationChip, { backgroundColor: colors.tintSuccess }]}>
                 <View style={[s.locationDot, { backgroundColor: colors.success }]} />
-                <Text style={[s.locationText, { color: colors.success }]} numberOfLines={2}>
+                <Text style={[s.locationText, { color: colors.success }]} numberOfLines={2} ellipsizeMode="tail">
                   {t("home.withinRange", { distance: formatDistance(outcome.res.gps_distance_meters) })}
                 </Text>
               </View>
             ) : (
               <View style={[s.locationChip, { backgroundColor: colors.tintBrand }]}>
                 <View style={[s.locationDot, { backgroundColor: colors.warning }]} />
-                <Text style={[s.locationText, { color: colors.textSecondary }]} numberOfLines={2}>
+                <Text style={[s.locationText, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
                   {t("home.locationDefault")}
                 </Text>
               </View>
@@ -601,7 +613,7 @@ export default function HomeScreen({
                   {pendingCount !== null ? (
                     <View style={[s.countPill, { backgroundColor: pendingCount ? colors.tintCrimson : colors.surfaceElevated }]}>
                       <Text style={[s.countText, { color: pendingCount ? colors.crimson : colors.textMuted }]}>
-                        {pendingCount.toLocaleString('ar-EG-u-nu-latn')}
+                        {formatNumber(pendingCount)}
                       </Text>
                     </View>
                   ) : null}
@@ -623,7 +635,7 @@ export default function HomeScreen({
                   {pendingCount === 0
                     ? t("requests.emptyPending")
                     : pendingCount === null
-                      ? t("requests.requestsUnavailable")
+                      ? t("home.requestsUnavailable")
                       : t("home.haveRequests", { count: tCount(pendingCount, REQUEST_FORMS) })}
                 </Text>
               </View>
@@ -862,6 +874,8 @@ const s = StyleSheet.create({
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
     textAlign: 'right',
+    lineHeight: lineHeightFor(font.size.lg),
+    ...baseText,
   },
   avatarPressable: {
     minHeight: 44,
@@ -888,6 +902,8 @@ const s = StyleSheet.create({
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
     textAlign: 'center',
+    lineHeight: lineHeightFor(font.size.lg),
+    ...baseText,
   },
   statusDot: {
     width: 11,
@@ -979,9 +995,10 @@ const s = StyleSheet.create({
     ...baseText,
   },
   popupItemText: {
+    flex: 1,
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
-    flexShrink: 0,
+    textAlign: 'right',
     writingDirection: 'rtl',
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
@@ -1013,20 +1030,20 @@ const s = StyleSheet.create({
   popupItem: {
     width: '100%',
     flexDirection: 'row',
-    direction: 'ltr',
+    direction: 'rtl',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     gap: 10,
     padding: spacing.sm,
     borderRadius: radius.sm,
     minHeight: 48,
   },
   popupItemLabelWrap: {
+    flex: 1,
     flexDirection: 'row',
     direction: 'rtl',
     justifyContent: 'flex-start',
     gap: spacing.xs,
-    width: 180,
     alignItems: 'center',
   },
   popupSection: {
@@ -1053,7 +1070,7 @@ const s = StyleSheet.create({
   },
   segmentText: {
     fontSize: font.size.sm,
-    fontFamily: font.familyMedium,
+    fontFamily: font.familySemiBold,
     textAlign: 'center',
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
@@ -1074,7 +1091,7 @@ const s = StyleSheet.create({
   cardLabel: {
     flex: 1,
     fontSize: font.size.md,
-    fontFamily: font.familyMedium,
+    fontFamily: font.familySemiBold,
     textAlign: 'right',
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,

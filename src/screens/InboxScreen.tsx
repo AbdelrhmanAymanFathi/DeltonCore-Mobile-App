@@ -17,7 +17,8 @@ import { Icon } from '../components/Icon'
 import { ScreenHeader } from '../components/ui'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { getRequestTypeAppearance } from '../constants/requestTypes'
-import { t, formatNumber, formatDateShort } from '../i18n'
+import { t, formatNumber, formatDateShort, formatSince } from '../i18n'
+import { DAY_FORMS } from '../i18n/plural'
 
 const FILTERS: { key: RequestType | 'all'; label: string; icon: string }[] = [
   { key: 'all', label: t("requests.all"), icon: 'view-grid-outline' },
@@ -285,7 +286,9 @@ function RequestCard({
   const appearance = getRequestTypeAppearance(item.request_type, colors)
   const timestamp = new Date(item.source_created_at).getTime()
   const ageInHours = Number.isNaN(timestamp) ? 0 : (Date.now() - timestamp) / 3_600_000
-  const date = formatRequestDate(item.source_created_at)
+  const date = ageInHours > 48
+    ? formatSince(Math.floor(ageInHours / 24), DAY_FORMS)
+    : formatRequestDate(item.source_created_at)
 
   return (
     <Pressable
@@ -306,22 +309,22 @@ function RequestCard({
           />
         </View>
         <View style={s.cardText}>
-          <Text style={[s.name, { color: colors.textPrimary }]} numberOfLines={1}>
+          <Text style={[s.name, { color: colors.textPrimary }]} numberOfLines={2} ellipsizeMode="tail">
             {item.employee.full_name_ar}
           </Text>
           <View style={[s.typeBadge, { backgroundColor: appearance.tintBg }]}>
-            <Text style={[s.typeBadgeText, { color: appearance.color }]} numberOfLines={1}>
+            <Text style={[s.typeBadgeText, { color: appearance.color }]} numberOfLines={1} ellipsizeMode="tail">
               {appearance.label}
             </Text>
           </View>
-          <Text style={[s.detail, { color: colors.textSecondary }]} numberOfLines={2}>
+          <Text style={[s.detail, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
             {item.title}{item.subtitle ? ` · ${item.subtitle}` : ''}
           </Text>
         </View>
         <View style={s.cardMeta}>
           <View style={s.dateRow}>
             {date && ageInHours > 48 ? <View style={[s.staleDot, { backgroundColor: colors.warning }]} /> : null}
-            <Text style={[s.when, { color: colors.textMuted }]} numberOfLines={1}>{date}</Text>
+            <Text style={[s.when, { color: colors.textMuted }]} numberOfLines={1} ellipsizeMode="tail">{date}</Text>
           </View>
           <Icon name="chevron-left" size={18} color={colors.textMuted} accessible={false} />
         </View>
@@ -389,7 +392,7 @@ const s = StyleSheet.create({
     gap: spacing.sm,
     zIndex: 1,
   },
-  tabText: { fontSize: font.size.base, fontFamily: font.familyMedium, lineHeight: lineHeightFor(font.size.base), ...baseText },
+  tabText: { fontSize: font.size.base, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.base), ...baseText },
   tabBadge: {
     minWidth: 18,
     height: 18,
@@ -418,7 +421,7 @@ const s = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
   },
-  chipText: { fontSize: font.size.sm, fontFamily: font.familyMedium, lineHeight: lineHeightFor(font.size.sm), ...baseText },
+  chipText: { fontSize: font.size.sm, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.sm), ...baseText },
   chipCount: { fontSize: font.size.xs, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
   emptyList: { flexGrow: 1, justifyContent: 'center' },

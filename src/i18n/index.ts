@@ -1,9 +1,3 @@
-/**
- * طبقة النصوص البسيطة للتطبيق.
- * t("المفتاح.الفرعي", { para: "قيمة" }) يستبدل {para} أو {{para}} بالقيمة الممررة.
- * لا تُضاف أي مكتبة خارجية — دالة t بسيطة تكفي.
- */
-
 import { strings } from './ar-EG'
 import {
   countAr,
@@ -12,9 +6,11 @@ import {
   MONTH_FORMS,
   REQUEST_FORMS,
   SECOND_FORMS,
+  EMPLOYEE_FORMS,
 } from './plural'
 import {
   formatDateFull,
+  formatDateKey,
   formatDateShort,
   formatDistance,
   formatMoney,
@@ -70,6 +66,7 @@ export {
   MONTH_FORMS,
   REQUEST_FORMS,
   SECOND_FORMS,
+  EMPLOYEE_FORMS,
 }
 
 /** خطأ متوقع تُعرض رسالته للمستخدم ويُسجل الأصل في وحدة التحكم. */
@@ -85,16 +82,30 @@ export class AppError extends Error {
  * أي رمز غير معروف يتحول إلى "حصل خطأ غير متوقع، حاول مرة أخرى." والأصل يُسجل في console.
  */
 export function mapError(error: unknown): string {
-  // AppError يحمل نصًا عربيًا جاهزًا في رسالته.
-  if (error instanceof AppError) {
-    console.error(`[Delton] AppError ${error.code}:`, error.original)
-    return error.message
+  const candidate = error && typeof error === 'object'
+    ? error as { code?: unknown; payload?: unknown; status?: unknown }
+    : {}
+  const errorMessage = error instanceof Error
+    ? error.message
+    : typeof error === 'string' ? error : ''
+  const code = typeof candidate.code === 'string'
+    ? candidate.code
+    : errorMessage || 'unknown'
+  const payload = candidate.payload && typeof candidate.payload === 'object'
+    ? candidate.payload as Record<string, unknown>
+    : {}
+  const status = typeof candidate.status === 'number' ? candidate.status : undefined
+
+  if (
+    /network request failed|failed to fetch|network error|internet|connection/i.test(errorMessage)
+  ) {
+    return strings.errors.noInternet
   }
 
-  const code = (error as { code?: string })?.code ?? 'unknown'
-  const payload = (error as { payload?: Record<string, unknown> })?.payload ?? {}
-
   const mapped: Record<string, string | ((p: Record<string, unknown>) => string)> = {
+    network_error: strings.errors.noInternet,
+    service_unavailable: strings.errors.serviceUnavailable,
+    server_error: strings.errors.serviceUnavailable,
     invalid_credentials: strings.errors.invalidCredentials,
     password_locked: strings.errors.accountLocked,
     too_many_attempts: (_p) => {
@@ -138,19 +149,26 @@ export function mapError(error: unknown): string {
     no_open_period: strings.errors.noOpenPeriod,
     idempotency_key_reuse: strings.errors.idempotencyReuse,
     timeout: strings.errors.timeout,
-    unknown: strings.errors.unexpected,
   }
 
   const entry = mapped[code]
-  let message: string
   if (typeof entry === 'function') {
-    message = (entry as (p: Record<string, unknown>) => string)(payload)
-  } else {
-    message = entry ?? strings.errors.unexpected
+    return entry(payload)
   }
-
-  console.error(`[Delton] API error ${code}:`, payload)
-  return message
+  if (entry) return entry
+  if (status === 403) return strings.errors.noPermission
+  if (status !== undefined && status >= 500) return strings.errors.serviceUnavailable
+  console.error('[Delton] Unmapped UI error:', error instanceof AppError ? error.original ?? error : error)
+  return strings.errors.unexpected
 }
 
-export { formatDateFull, formatDateShort, formatDistance, formatMoney, formatSince, formatTime12, formatNumber }
+export {
+  formatDateFull,
+  formatDateKey,
+  formatDateShort,
+  formatDistance,
+  formatMoney,
+  formatSince,
+  formatTime12,
+  formatNumber,
+}

@@ -5,7 +5,6 @@ import * as SplashScreen from 'expo-splash-screen'
 import {
   useFonts,
   IBMPlexSansArabic_400Regular,
-  IBMPlexSansArabic_500Medium,
   IBMPlexSansArabic_600SemiBold,
   IBMPlexSansArabic_700Bold,
 } from '@expo-google-fonts/ibm-plex-sans-arabic'
@@ -17,17 +16,15 @@ import { installMockApi } from './src/api/mock'
 import { MockIndicator } from './src/components/MockIndicator'
 import { StatusBarCover } from './src/components/StatusBarCover'
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider'
-import { font } from './src/theme/tokens'
+import { font, lineHeightFor, baseText } from './src/theme/tokens'
 import { PressableScale } from './src/components/ui/PressableScale'
 import { t } from './src/i18n'
 
 // RTL must be forced before the first render. On Android this only takes full
 // effect after a restart, which is why it is set here and also declared in
 // app.json — a fresh install comes up right the first time.
-if (!I18nManager.isRTL) {
-  I18nManager.allowRTL(true)
-  I18nManager.forceRTL(true)
-}
+I18nManager.allowRTL(true)
+I18nManager.forceRTL(true)
 
 installMockApi()
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -40,7 +37,6 @@ function ThemeStatusBar() {
 export default function App() {
   const [fontsLoaded] = useFonts({
     IBMPlexSansArabic_400Regular,
-    IBMPlexSansArabic_500Medium,
     IBMPlexSansArabic_600SemiBold,
     IBMPlexSansArabic_700Bold,
   })
@@ -112,6 +108,8 @@ const s = StyleSheet.create({
   },
   retryText: {
     fontSize: font.size.base,
-    fontFamily: font.familyMedium,
+    lineHeight: lineHeightFor(font.size.base),
+    fontFamily: font.familySemiBold,
+    ...baseText,
   },
 })

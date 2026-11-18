@@ -13,7 +13,8 @@ import { Icon } from '../components/Icon'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t, formatNumber } from '../i18n'
+import { t, formatNumber, tCount } from '../i18n'
+import { REQUEST_FORMS } from '../i18n/plural'
 
 type Tab = 'home' | 'inbox' | 'employees'
 type Pushed =
@@ -250,7 +251,7 @@ function TabButton({
       onPress={onPress}
       accessibilityRole="tab"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={showBadge ? t("nav.badgeA11y", { label, count: formatNumber(badge) }) : label}
+      accessibilityLabel={showBadge ? t("nav.badgeA11y", { label, count: tCount(badge, REQUEST_FORMS) }) : label}
       hitSlop={8}
       style={s.tab}
     >
@@ -269,14 +270,14 @@ function TabButton({
             />
             {showBadge ? (
               <View style={[s.tabBadge, { backgroundColor: colors.badgeCrimson, borderColor: colors.surface }]}>
-                <Text style={[s.tabBadgeText, { color: colors.onCrimson }]}>{badge > 99 ? '99+' : badge.toLocaleString('ar-EG-u-nu-latn')}</Text>
+                <Text style={[s.tabBadgeText, { color: colors.onCrimson }]}>{badge > 99 ? '99+' : formatNumber(badge)}</Text>
               </View>
             ) : null}
           </View>
         ) : null}
         <Text style={[
           s.tabLabelBase,
-          active ? { color: colors.brandText, fontFamily: font.familyBold } : { color: colors.textMuted, fontFamily: font.familyMedium },
+          active ? { color: colors.brandText, fontFamily: font.familyBold } : { color: colors.textMuted, fontFamily: font.familySemiBold },
         ]}>{label}</Text>
       </View>
     </Pressable>

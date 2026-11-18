@@ -169,7 +169,7 @@ export default function RequestDetailScreen({
             </View>
             <View style={s.employeeText}>
               <Text style={[s.employeeName, { color: colors.textPrimary }]}>{data.employee.full_name_ar}</Text>
-              <Text style={[s.employeeMeta, { color: colors.textMuted }]}>{data.employee.employee_number}</Text>
+              <Text style={[s.employeeMeta, { color: colors.textMuted, writingDirection: 'ltr' }]}>{data.employee.employee_number}</Text>
             </View>
             <TypeBadge type={data.request_type} />
           </View>
@@ -350,7 +350,7 @@ const s = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: font.size.sm,
-    fontFamily: font.familyMedium,
+    fontFamily: font.familySemiBold,
     textAlign: 'right',
     marginBottom: spacing.md,
     lineHeight: lineHeightFor(font.size.sm),

@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "supportsRTL": true,
     "icon": "./assets/appicon.png",
     "scheme": "deltoncore",
     "splash": {
@@ -36,7 +37,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "يستخدم التطبيق موقعك عند تسجيل الحضور فقط، للتحقق من أنك داخل نطاق موقع العمل."
+          "locationWhenInUsePermission": "نحدد موقعك وقت تسجيل الحضور للتأكد أنك داخل نطاق الموقع."
         }
       ],
       "expo-secure-store",

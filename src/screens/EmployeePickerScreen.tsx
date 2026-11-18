@@ -121,10 +121,10 @@ export default function EmployeePickerScreen({ title, onBack, onPick }: Props) {
                 <Text style={[s.avatarText, { color: colors.brandText }]}>{initials(item.name)}</Text>
               </View>
               <View style={s.rowText}>
-                <Text style={[s.rowName, { color: colors.textPrimary }]} numberOfLines={1}>
+                <Text style={[s.rowName, { color: colors.textPrimary }]} numberOfLines={2} ellipsizeMode="tail">
                   {item.name}
                 </Text>
-                <Text style={[s.rowMeta, { color: colors.textMuted }]}>{item.employee_number}</Text>
+                <Text style={[s.rowMeta, { color: colors.textMuted, writingDirection: 'ltr' }]}>{item.employee_number}</Text>
               </View>
             </Pressable>
           )}
@@ -193,7 +193,7 @@ const s = StyleSheet.create({
   rowText: { flex: 1 },
   rowName: {
     fontSize: font.size.base,
-    fontFamily: font.familyMedium,
+    fontFamily: font.familySemiBold,
     textAlign: 'right',
     lineHeight: lineHeightFor(font.size.base),
     ...baseText,
