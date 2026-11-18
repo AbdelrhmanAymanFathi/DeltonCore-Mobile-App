@@ -56,7 +56,7 @@ export const strings = {
   },
 
   login: {
-    title: 'مشرفو دلتون',
+    title: 'دلتون للموارد بشرية',
     subtitle: 'تسجيل الدخول للمتابعة',
     usernameLabel: 'اسم المستخدم',
     passwordLabel: 'كلمة المرور',

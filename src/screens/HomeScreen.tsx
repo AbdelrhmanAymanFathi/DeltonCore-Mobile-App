@@ -1030,9 +1030,9 @@ const s = StyleSheet.create({
   popupItem: {
     width: '100%',
     flexDirection: 'row',
-    direction: 'rtl',
+    direction: 'ltr',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
     gap: 10,
     padding: spacing.sm,
     borderRadius: radius.sm,
@@ -1041,7 +1041,7 @@ const s = StyleSheet.create({
   popupItemLabelWrap: {
     flex: 1,
     flexDirection: 'row',
-    direction: 'rtl',
+    direction: 'ltr',
     justifyContent: 'flex-start',
     gap: spacing.xs,
     alignItems: 'center',
