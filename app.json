@@ -8,12 +8,6 @@
     "supportsRTL": true,
     "icon": "./assets/appicon.png",
     "scheme": "deltoncore",
-    "splash": {
-      "image": "./assets/loadingicon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F7F5F0",
-      "imageWidth": 240
-    },
     "androidStatusBar": {
       "backgroundColor": "#0D1522",
       "barStyle": "light-content"
@@ -41,7 +35,19 @@
         }
       ],
       "expo-secure-store",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/loadingicon.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "backgroundColor": "#F7F5F0",
+          "dark": {
+            "image": "./assets/loadingicon.png",
+            "backgroundColor": "#0D1522"
+          }
+        }
+      ],
       "expo-system-ui"
     ],
     "extra": {
