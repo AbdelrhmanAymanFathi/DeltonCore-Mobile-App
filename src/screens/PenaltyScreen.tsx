@@ -17,7 +17,7 @@ import { Icon } from '../components/Icon'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t, tCount, formatNumber } from '../i18n'
+import { t, tCount, formatNumber, localeStyles, useLocale } from '../i18n'
 import { DAY_FORMS } from '../i18n/plural'
 
 interface Props {
@@ -36,6 +36,7 @@ export default function PenaltyScreen({
   onUnsavedChange,
 }: Props) {
   const { colors } = useTheme()
+  const { align } = useLocale()
   const insets = useSafeAreaInsets()
   const [ctx, setCtx] = useState<PenaltyFormContext | null>(null)
   const [loading, setLoading] = useState(true)
@@ -341,7 +342,7 @@ export default function PenaltyScreen({
             editable={!controlsDisabled}
             placeholder={t("penalty.reasonPlaceholder")}
             placeholderTextColor={colors.inputPlaceholder}
-            textAlign="right"
+            textAlign={align}
             textAlignVertical="top"
           />
           <View style={s.reasonMeta}>
@@ -453,7 +454,7 @@ function penaltyIcon(typeId: number): string {
   return 'gavel'
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   screen: { flex: 1 },
   scroll: { flex: 1 },
   body: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.md },
@@ -481,7 +482,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.md,
   },
-  closedText: { flex: 1, fontSize: font.size.base, lineHeight: lineHeightFor(font.size.base), fontFamily: font.familySemiBold, textAlign: 'right', ...baseText },
+  closedText: { flex: 1, fontSize: font.size.base, lineHeight: lineHeightFor(font.size.base), fontFamily: font.familySemiBold, textAlign: L.align, ...baseText },
   stepCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.md, gap: spacing.md },
   stepHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: spacing.sm },
   stepNumber: { width: 24, height: 24, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
@@ -499,8 +500,8 @@ const s = StyleSheet.create({
   employeeAvatar: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   employeeInitials: { fontSize: font.size.md, fontFamily: font.familyBold, lineHeight: lineHeightFor(font.size.md), ...baseText },
   employeeText: { flex: 1, gap: 2 },
-  employeeName: { flex: 1, textAlign: 'right', fontSize: font.size.base, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.base), ...baseText },
-  employeeNumber: { textAlign: 'right', fontSize: font.size.xs, fontFamily: font.family, lineHeight: lineHeightFor(font.size.xs), ...baseText },
+  employeeName: { flex: 1, textAlign: L.align, fontSize: font.size.base, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.base), ...baseText },
+  employeeNumber: { textAlign: L.align, fontSize: font.size.xs, fontFamily: font.family, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   typeOption: {
     width: '48%',
@@ -515,7 +516,7 @@ const s = StyleSheet.create({
     position: 'relative',
   },
   typeIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  typeName: { flex: 1, textAlign: 'right', fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.familySemiBold, ...baseText },
+  typeName: { flex: 1, textAlign: L.align, fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.familySemiBold, ...baseText },
   selectedCheck: { position: 'absolute', top: spacing.xs, right: spacing.xs, width: 18, height: 18, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xl },
   stepperButton: { width: 44, height: 44, borderWidth: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
@@ -534,10 +535,10 @@ const s = StyleSheet.create({
     ...baseText,
   },
   reasonMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  note: { flex: 1, fontSize: font.size.xs, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.xs), ...baseText },
+  note: { flex: 1, fontSize: font.size.xs, fontFamily: font.family, textAlign: L.align, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   counter: { fontSize: font.size.xs, fontFamily: font.family, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md },
-  errorText: { flex: 1, fontSize: font.size.sm, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.sm), ...baseText },
+  errorText: { flex: 1, fontSize: font.size.sm, fontFamily: font.family, textAlign: L.align, lineHeight: lineHeightFor(font.size.sm), ...baseText },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, gap: spacing.sm },
   footerHint: { textAlign: 'center', fontSize: font.size.xs, fontFamily: font.family, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   toast: {
@@ -555,4 +556,4 @@ const s = StyleSheet.create({
     zIndex: 1100,
   },
   toastText: { fontSize: font.size.sm, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.sm), ...baseText },
-})
+}))

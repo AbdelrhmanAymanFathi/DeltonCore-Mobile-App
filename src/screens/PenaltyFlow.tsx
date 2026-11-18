@@ -6,7 +6,7 @@ import PenaltyScreen from './PenaltyScreen'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { radius } from '../theme/tokens'
-import { t } from '../i18n'
+import { t, localeStyles, useLocale } from '../i18n'
 
 /**
  * The penalty form and its employee picker as one unit.
@@ -30,6 +30,7 @@ export default function PenaltyFlow({
   onUnsavedChange?: (dirty: boolean) => void
 }) {
   const { colors } = useTheme()
+  const { dir } = useLocale()
   const [picking, setPicking] = useState(false)
   const [employee, setEmployee] = useState<SiteEmployee | null>(null)
 
@@ -59,7 +60,7 @@ export default function PenaltyFlow({
         statusBarTranslucent
         onRequestClose={() => setPicking(false)}
       >
-        <View style={styles.modal}>
+        <View style={[styles.modal, { direction: dir }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("employees.closePicker")}
@@ -82,7 +83,7 @@ export default function PenaltyFlow({
   )
 }
 
-const styles = StyleSheet.create({
+const styles = localeStyles((L) => ({
   root: { flex: 1 },
   modal: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFill },
@@ -92,4 +93,4 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.xxl,
     overflow: 'hidden',
   },
-})
+}))

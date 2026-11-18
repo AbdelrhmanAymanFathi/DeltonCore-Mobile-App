@@ -36,7 +36,7 @@ import {
   lineHeightFor,
   baseText,
 } from '../theme/tokens'
-import { t, tCount, formatDateKey, formatDateShort, formatTime12, formatNumber, formatDistance } from '../i18n'
+import { t, tCount, formatDateKey, formatDateShort, formatTime12, formatNumber, formatDistance, localeStyles, useLocale } from '../i18n'
 import { DAY_FORMS, REQUEST_FORMS } from '../i18n/plural'
 
 const PASSWORD_WARN_DAYS = 7
@@ -67,6 +67,7 @@ export default function HomeScreen({
   onCompanyChanged,
 }: Props) {
   const { colors, gradients, setMode, mode } = useTheme()
+  const { rtl } = useLocale()
   const { session, companies, switchCompany, signOut } = useAuth()
   const location = usePunchLocation()
   const insets = useSafeAreaInsets()
@@ -665,7 +666,7 @@ export default function HomeScreen({
         <Animated.View
           style={[
             s.popup,
-            { right: spacing.sm, top: insets.top + 72 + spacing.sm, backgroundColor: colors.surfaceElevated, borderColor: colors.border, shadowColor: colors.background, shadowOpacity: 0.25 },
+            { ...(rtl ? { right: spacing.sm } : { left: spacing.sm }), top: insets.top + 72 + spacing.sm, backgroundColor: colors.surfaceElevated, borderColor: colors.border, shadowColor: colors.background, shadowOpacity: 0.25 },
             {
               opacity: popupAnim,
               transform: [
@@ -789,6 +790,7 @@ function Tile({
     textMuted: string
   }
 }) {
+  const { rtl } = useLocale()
   const iconColor = tone === 'brand' ? colors.brandText : colors.crimson
   const iconBackground = tone === 'brand' ? colors.tintBrand : colors.tintCrimson
   const subtitle = tone === 'brand' ? t("home.subtitleEmployees") : t("home.subtitlePenalty")
@@ -810,7 +812,7 @@ function Tile({
         <Text style={[s.tileLabel, { color: colors.textPrimary }]}>{label}</Text>
         <Text style={[s.tileSubtitle, { color: colors.textMuted }]}>{subtitle}</Text>
       </View>
-      <Icon name="chevron-left" size={18} color={colors.textMuted} accessible={false} />
+      <Icon name={rtl ? "chevron-left" : "chevron-right"} size={18} color={colors.textMuted} accessible={false} />
     </Pressable>
   )
 }
@@ -832,7 +834,7 @@ function timeOf(iso: string | null) {
   return formatTime12(new Date(iso))
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   screen: { flex: 1 },
   content: { paddingBottom: spacing.xxl, position: 'relative' },
   backgroundGlow: {
@@ -844,7 +846,7 @@ const s = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.xl,
-    flexDirection: 'row',
+    flexDirection: L.ltrRow,
     direction: 'ltr',
     alignItems: 'center',
     gap: spacing.md,
@@ -854,26 +856,26 @@ const s = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   notifLtr: { direction: 'ltr' },
-  headerText: { flex: 1, direction: 'ltr', alignItems: 'flex-end' },
+  headerText: { flex: 1, direction: 'ltr', alignItems: L.ltrEnd },
   greeting: {
     fontSize: font.size.md,
     fontFamily: font.family,
-    textAlign: 'right',
-    alignSelf: 'flex-end',
-    writingDirection: 'rtl',
+    textAlign: L.align,
+    alignSelf: L.ltrEnd,
+    writingDirection: L.dir,
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
   },
   siteRow: {
     flexDirection: 'row',
-    direction: 'rtl',
+    direction: L.dir,
     alignItems: 'center',
     gap: spacing.xs,
   },
   siteName: {
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.lg),
     ...baseText,
   },
@@ -955,7 +957,7 @@ const s = StyleSheet.create({
     position: 'absolute',
     right: spacing.sm,
     top: 0,
-    direction: 'rtl',
+    direction: L.dir,
     width: 280,
     alignItems: 'stretch',
     borderWidth: 1,
@@ -972,14 +974,14 @@ const s = StyleSheet.create({
     padding: spacing.sm,
     gap: spacing.xs,
     alignSelf: 'stretch',
-    alignItems: 'flex-end',
+    alignItems: L.ltrEnd,
   },
   popupName: {
     width: '100%',
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    textAlign: L.align,
+    writingDirection: L.dir,
     alignSelf: 'stretch',
     lineHeight: lineHeightFor(font.size.base),
     ...baseText,
@@ -988,8 +990,8 @@ const s = StyleSheet.create({
     width: '100%',
     fontSize: font.size.sm,
     fontFamily: font.family,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    textAlign: L.align,
+    writingDirection: L.dir,
     alignSelf: 'stretch',
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
@@ -998,8 +1000,8 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    textAlign: L.align,
+    writingDirection: L.dir,
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
   },
@@ -1007,8 +1009,8 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    textAlign: L.align,
+    writingDirection: L.dir,
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
   },
@@ -1016,8 +1018,8 @@ const s = StyleSheet.create({
     width: '100%',
     fontSize: font.size.sm,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    textAlign: L.align,
+    writingDirection: L.dir,
     alignSelf: 'stretch',
     marginBottom: spacing.xs,
     lineHeight: lineHeightFor(font.size.sm),
@@ -1029,7 +1031,7 @@ const s = StyleSheet.create({
   },
   popupItem: {
     width: '100%',
-    flexDirection: 'row',
+    flexDirection: L.ltrRow,
     direction: 'ltr',
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -1040,7 +1042,7 @@ const s = StyleSheet.create({
   },
   popupItemLabelWrap: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: L.ltrRow,
     direction: 'ltr',
     justifyContent: 'flex-start',
     gap: spacing.xs,
@@ -1050,7 +1052,7 @@ const s = StyleSheet.create({
     width: '100%',
     direction: 'ltr',
     paddingHorizontal: spacing.sm,
-    alignItems: 'flex-end',
+    alignItems: L.ltrEnd,
   },
   segmentedControl: {
     width: '100%',
@@ -1092,7 +1094,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
   },
@@ -1121,7 +1123,7 @@ const s = StyleSheet.create({
   state: {
     fontSize: font.size.title,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     marginBottom: spacing.lg,
     lineHeight: lineHeightFor(font.size.title),
     ...baseText,
@@ -1129,7 +1131,7 @@ const s = StyleSheet.create({
   hint: {
     fontSize: 12,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     marginTop: spacing.sm,
     lineHeight: lineHeightFor(12),
     ...baseText,
@@ -1271,14 +1273,14 @@ const s = StyleSheet.create({
     fontSize: 15,
     lineHeight: lineHeightFor(15),
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     ...baseText,
   },
   tileSubtitle: {
     fontSize: 12,
     lineHeight: lineHeightFor(12),
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     ...baseText,
   },
-})
+}))

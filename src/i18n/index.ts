@@ -1,4 +1,6 @@
-import { strings } from './ar-EG'
+import { strings as arStrings } from './ar-EG'
+import { strings as enStrings } from './en'
+import { getLocale } from './locale'
 import {
   countAr,
   DAY_FORMS,
@@ -18,6 +20,10 @@ import {
   formatTime12,
   formatNumber,
 } from './format'
+
+function currentStrings() {
+  return getLocale() === 'ar' ? arStrings : enStrings
+}
 
 function get(obj: Record<string, unknown>, path: string): unknown {
   let cur: unknown = obj
@@ -42,7 +48,7 @@ function interpolate(template: string, params?: Record<string, string | number>)
  * تعيد المفتاح نفسه لو لم يُوجد (لتسهيل التصحيح أثناء النقل).
  */
 export function t(path: string, params?: Record<string, string | number>): string {
-  const value = get(strings as Record<string, unknown>, path)
+  const value = get(currentStrings() as Record<string, unknown>, path)
   if (typeof value === 'function') {
     return interpolate(value(...(params ? Object.values(params) : [])), params)
   }
@@ -82,6 +88,7 @@ export class AppError extends Error {
  * أي رمز غير معروف يتحول إلى "حصل خطأ غير متوقع، حاول مرة أخرى." والأصل يُسجل في console.
  */
 export function mapError(error: unknown): string {
+  const strings = currentStrings()
   const candidate = error && typeof error === 'object'
     ? error as { code?: unknown; payload?: unknown; status?: unknown }
     : {}
@@ -172,3 +179,6 @@ export {
   formatTime12,
   formatNumber,
 }
+
+export { LocaleProvider, useLocale, localeStyles, getLocale, isRTLLocale } from './locale'
+export type { Locale, LocaleTokens } from './locale'

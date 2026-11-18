@@ -14,7 +14,7 @@ import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { Icon } from '../components/Icon'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t } from '../i18n'
+import { t, localeStyles, useLocale } from '../i18n'
 
 interface Props {
   title?: string
@@ -151,7 +151,7 @@ function EmployeeSkeleton({ colors }: { colors: { surface: string; border: strin
   )
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   screen: { flex: 1 },
   searchWrap: {
     padding: spacing.lg,
@@ -163,7 +163,7 @@ const s = StyleSheet.create({
     borderRadius: radius.md,
     fontSize: font.size.lg,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.lg),
     ...baseText,
   },
@@ -194,14 +194,14 @@ const s = StyleSheet.create({
   rowName: {
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.base),
     ...baseText,
   },
   rowMeta: {
     fontSize: font.size.sm,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     marginTop: 2,
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
@@ -253,4 +253,4 @@ const s = StyleSheet.create({
     lineHeight: lineHeightFor(font.size.base),
     ...baseText,
   },
-})
+}))

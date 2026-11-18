@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Banner, Card, SolidButton } from '../components/ui'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t, tCount } from '../i18n'
+import { t, tCount, localeStyles, useLocale } from '../i18n'
 import { DAY_FORMS } from '../i18n/plural'
 
 export default function PasswordChangeRequiredScreen() {
@@ -65,7 +65,7 @@ export default function PasswordChangeRequiredScreen() {
   )
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   screen: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 22 },
   card: { gap: spacing.xl },
@@ -92,8 +92,8 @@ const s = StyleSheet.create({
   body: {
     fontSize: font.size.base,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.base),
     ...baseText,
   },
-})
+}))

@@ -52,6 +52,9 @@ export const strings = {
     useAppCode: 'استخدام رمز التطبيق',
     useBackupCode: 'استخدام رمز احتياطي',
     deltonCore: 'Delton Core',
+    language: 'اللغة',
+    languageArabic: 'العربية',
+    languageEnglish: 'English',
     version: (v: string) => `الإصدار ${isolateLtr(v)}`,
   },
 

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon } from './Icon'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t } from '../i18n'
+import { t, localeStyles } from '../i18n'
 
 export function MockIndicator() {
   const { colors } = useTheme()
@@ -66,7 +66,7 @@ export function MockIndicator() {
   )
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   toast: {
     position: 'absolute',
     alignSelf: 'center',
@@ -84,8 +84,8 @@ const s = StyleSheet.create({
   text: {
     fontSize: font.size.sm,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
   },
-})
+}))

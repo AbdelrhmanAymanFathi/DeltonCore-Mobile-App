@@ -1,3 +1,5 @@
+import { getLocale } from './locale'
+
 export type PluralForms = {
   zero?: string
   one: string
@@ -6,8 +8,9 @@ export type PluralForms = {
   many: string
 }
 
+/** Wraps a value so digits/Latin text keep their order inside Arabic text. No-op in English. */
 export function isolateLtr(value: string): string {
-  return `\u2066${value}\u2069`
+  return getLocale() === 'ar' ? `⁦${value}⁩` : value
 }
 
 export function pluralAr(n: number, forms: PluralForms): string {
@@ -19,17 +22,54 @@ export function pluralAr(n: number, forms: PluralForms): string {
   return `${isolateLtr(String(count))} ${forms.many}`
 }
 
-/**
- * مجموعات كلمات العداد الجاهزة للشاشات المتكررة، تُمرَّر لـ tCount.
- */
-export const DAY_FORMS = { zero: 'لا توجد أيام', one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' }
-export const REQUEST_FORMS = { zero: 'لا توجد طلبات', one: 'طلب', two: 'طلبين', few: 'طلبات', many: 'طلب' }
-export const EMPLOYEE_FORMS = { zero: 'لا يوجد موظفون', one: 'موظف', two: 'موظفان', few: 'موظفين', many: 'موظف' }
-export const MONTH_FORMS = { zero: 'لا توجد شهور', one: 'شهر', two: 'شهرين', few: 'شهور', many: 'شهر' }
-export const HOUR_FORMS = { zero: 'لا توجد ساعات', one: 'ساعة', two: 'ساعتين', few: 'ساعات', many: 'ساعة' }
-export const SECOND_FORMS = { zero: 'لا توجد ثوان', one: 'ثانية', two: 'ثانيتين', few: 'ثوان', many: 'ثانية' }
+/** English: "No items" / "1 item" / "3 items". `one` is singular, `many` plural. */
+export function pluralEn(n: number, forms: PluralForms): string {
+  const count = Math.trunc(n)
+  if (count <= 0) return forms.zero ?? 'None'
+  return `${count} ${count === 1 ? forms.one : forms.many}`
+}
+
+/** Counter with its noun, in the active language's plural rules. */
+export function countAr(n: number, forms: PluralForms): string {
+  return getLocale() === 'ar' ? pluralAr(n, forms) : pluralEn(n, forms)
+}
+
+/** Builds a forms object whose words follow the active language. */
+function localizedForms(ar: PluralForms, en: PluralForms): PluralForms {
+  const pick = () => (getLocale() === 'ar' ? ar : en)
+  return {
+    get zero() { return pick().zero },
+    get one() { return pick().one },
+    get two() { return pick().two },
+    get few() { return pick().few },
+    get many() { return pick().many },
+  }
+}
 
 /**
- * عدد مع كلمته مضبوطة بالجمع العربي، من غير رقم للصفر حسب الحالات.
+ * Ready-made noun forms for recurring screens, passed to tCount.
  */
-export const countAr = pluralAr
+export const DAY_FORMS = localizedForms(
+  { zero: 'لا توجد أيام', one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' },
+  { zero: 'No days', one: 'day', two: 'days', few: 'days', many: 'days' },
+)
+export const REQUEST_FORMS = localizedForms(
+  { zero: 'لا توجد طلبات', one: 'طلب', two: 'طلبين', few: 'طلبات', many: 'طلب' },
+  { zero: 'No requests', one: 'request', two: 'requests', few: 'requests', many: 'requests' },
+)
+export const EMPLOYEE_FORMS = localizedForms(
+  { zero: 'لا يوجد موظفون', one: 'موظف', two: 'موظفان', few: 'موظفين', many: 'موظف' },
+  { zero: 'No employees', one: 'employee', two: 'employees', few: 'employees', many: 'employees' },
+)
+export const MONTH_FORMS = localizedForms(
+  { zero: 'لا توجد شهور', one: 'شهر', two: 'شهرين', few: 'شهور', many: 'شهر' },
+  { zero: 'No months', one: 'month', two: 'months', few: 'months', many: 'months' },
+)
+export const HOUR_FORMS = localizedForms(
+  { zero: 'لا توجد ساعات', one: 'ساعة', two: 'ساعتين', few: 'ساعات', many: 'ساعة' },
+  { zero: 'No hours', one: 'hour', two: 'hours', few: 'hours', many: 'hours' },
+)
+export const SECOND_FORMS = localizedForms(
+  { zero: 'لا توجد ثوان', one: 'ثانية', two: 'ثانيتين', few: 'ثوان', many: 'ثانية' },
+  { zero: 'No seconds', one: 'second', two: 'seconds', few: 'seconds', many: 'seconds' },
+)

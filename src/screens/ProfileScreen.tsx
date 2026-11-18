@@ -1,12 +1,18 @@
 import React from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { PressableScale } from '../components/ui/PressableScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '../auth/AuthContext'
 import { Card, ScreenHeader } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t } from '../i18n'
+import { t, localeStyles, useLocale, type Locale } from '../i18n'
+
+const LANGUAGES: { locale: Locale; label: () => string }[] = [
+  { locale: 'ar', label: () => t('common.languageArabic') },
+  { locale: 'en', label: () => t('common.languageEnglish') },
+]
 
 interface Props {
   onBack: () => void
@@ -15,6 +21,7 @@ interface Props {
 export default function ProfileScreen({ onBack }: Props) {
   const { colors } = useTheme()
   const { session } = useAuth()
+  const { locale, setLocale } = useLocale()
   const insets = useSafeAreaInsets()
   const name = session?.employee.full_name_ar || session?.user.full_name || t('common.defaultName')
   const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('')
@@ -72,12 +79,35 @@ export default function ProfileScreen({ onBack }: Props) {
             </View>
           ))}
         </Card>
+
+        <Card style={s.detailsCard}>
+          <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t("common.language")}</Text>
+          <View style={[s.segmented, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {LANGUAGES.map((option) => {
+              const selected = locale === option.locale
+              return (
+                <PressableScale
+                  key={option.locale}
+                  onPress={() => setLocale(option.locale)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={option.label()}
+                  style={[s.segment, selected && { backgroundColor: colors.brand }]}
+                >
+                  <Text style={[s.segmentText, { color: selected ? colors.onBrand : colors.textSecondary }]}>
+                    {option.label()}
+                  </Text>
+                </PressableScale>
+              )
+            })}
+          </View>
+        </Card>
       </ScrollView>
     </View>
   )
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   screen: { flex: 1 },
   content: {
     paddingHorizontal: spacing.xl,
@@ -121,17 +151,17 @@ const s = StyleSheet.create({
   },
   sectionTitle: {
     width: '100%',
-    writingDirection: 'rtl',
+    writingDirection: L.dir,
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     marginBottom: spacing.sm,
     lineHeight: lineHeightFor(font.size.lg),
     ...baseText,
   },
   field: {
     flexDirection: 'row',
-    direction: 'rtl',
+    direction: L.dir,
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.md,
@@ -152,10 +182,10 @@ const s = StyleSheet.create({
   },
   fieldLabel: {
     width: '100%',
-    writingDirection: 'rtl',
+    writingDirection: L.dir,
     fontSize: font.size.xs,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.xs),
     ...baseText,
   },
@@ -163,9 +193,29 @@ const s = StyleSheet.create({
     width: '100%',
     fontSize: font.size.base,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    textAlign: L.align,
+    writingDirection: L.dir,
     lineHeight: lineHeightFor(font.size.base),
     ...baseText,
   },
-})
+  segmented: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+    gap: spacing.xs,
+  },
+  segment: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentText: {
+    fontSize: font.size.base,
+    fontFamily: font.familySemiBold,
+    lineHeight: lineHeightFor(font.size.base),
+    ...baseText,
+  },
+}))

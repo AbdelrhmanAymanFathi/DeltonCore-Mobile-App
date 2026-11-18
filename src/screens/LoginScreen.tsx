@@ -20,7 +20,7 @@ import { Button } from '../components/ui'
 import { PressableScale } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t } from '../i18n'
+import { t, localeStyles, useLocale } from '../i18n'
 import CompanyPickerScreen from './CompanyPickerScreen'
 import TwoFactorScreen from './TwoFactorScreen'
 
@@ -29,6 +29,7 @@ type CredentialField = 'username' | 'password'
 
 export default function LoginScreen() {
   const { colors, isDark } = useTheme()
+  const { dir } = useLocale()
   const { signIn, adoptSession } = useAuth()
   const insets = useSafeAreaInsets()
   const [phase, setPhase] = useState<Phase>('credentials')
@@ -268,7 +269,7 @@ export default function LoginScreen() {
                     <TextInput
                       style={[
                         styles.input,
-                        { color: colors.textPrimary, writingDirection: containsLatin(username) ? 'ltr' : 'rtl' },
+                        { color: colors.textPrimary, writingDirection: containsLatin(username) ? 'ltr' : dir },
                       ]}
                       value={username}
                       onChangeText={(value) => {
@@ -327,7 +328,7 @@ export default function LoginScreen() {
                       ref={passwordInput}
                       style={[
                         styles.input,
-                        { color: colors.textPrimary, writingDirection: containsLatin(password) ? 'ltr' : 'rtl' },
+                        { color: colors.textPrimary, writingDirection: containsLatin(password) ? 'ltr' : dir },
                       ]}
                       value={password}
                       onChangeText={(value) => {
@@ -463,7 +464,7 @@ function containsLatin(value: string) {
   return /[A-Za-z0-9]/.test(value)
 }
 
-const styles = StyleSheet.create({
+const styles = localeStyles((L) => ({
   flex: { flex: 1 },
   glow: {
     position: 'absolute',
@@ -502,12 +503,12 @@ const styles = StyleSheet.create({
   fields: { gap: spacing.lg, marginTop: spacing.xl },
   field: { gap: spacing.sm },
   labelWrap: { width: '100%', direction: 'ltr', alignItems: 'flex-end' },
-  label: { width: '100%', fontSize: 13, lineHeight: lineHeightFor(13), fontFamily: font.familySemiBold, textAlign: 'right', ...baseText },
+  label: { width: '100%', fontSize: 13, lineHeight: lineHeightFor(13), fontFamily: font.familySemiBold, textAlign: L.align, ...baseText },
   fieldOuter: { borderRadius: radius.lg, padding: 2 },
   inputRow: {
     height: 56,
     flexDirection: 'row',
-    direction: 'rtl',
+    direction: L.dir,
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.md,
@@ -524,12 +525,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: lineHeightFor(16),
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     ...baseText,
   },
   eyeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   fieldErrorSlot: { height: 18, justifyContent: 'center' },
-  fieldError: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, direction: 'rtl' },
+  fieldError: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, direction: L.dir },
   fieldErrorText: { fontSize: font.size.xs, lineHeight: lineHeightFor(font.size.xs), fontFamily: font.family, ...baseText },
   submitArea: { gap: spacing.xs },
   errorSlot: { minHeight: 0, justifyContent: 'center' },
@@ -543,15 +544,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.md,
   },
-  errorText: { flex: 1, fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.family, textAlign: 'right', ...baseText },
+  errorText: { flex: 1, fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.family, textAlign: L.align, ...baseText },
   helpList: { gap: spacing.md },
-  helpRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, direction: 'rtl' },
+  helpRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, direction: L.dir },
   helpIcon: { width: 30, height: 30, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  helpText: { flex: 1, fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.family, textAlign: 'right', ...baseText },
+  helpText: { flex: 1, fontSize: font.size.sm, lineHeight: lineHeightFor(font.size.sm), fontFamily: font.family, textAlign: L.align, ...baseText },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.sm },
   footerWrap: { width: '100%', maxWidth: 420, alignSelf: 'center', paddingHorizontal: 24, paddingTop: spacing.md, gap: spacing.md },
   footerSide: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   footerArabic: { fontSize: 11, lineHeight: lineHeightFor(11), fontFamily: font.family, ...baseText },
   footerDot: { width: 3, height: 3, borderRadius: radius.pill },
   footerEnglish: { fontSize: 11, lineHeight: lineHeightFor(11), fontFamily: font.family, writingDirection: 'ltr', textAlign: 'center', ...baseText },
-})
+}))

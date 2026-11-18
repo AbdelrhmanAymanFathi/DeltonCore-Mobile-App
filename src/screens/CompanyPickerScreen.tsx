@@ -10,7 +10,7 @@ import { Banner } from '../components/ui'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, MIN_TOUCH, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t } from '../i18n'
+import { t, localeStyles, useLocale } from '../i18n'
 
 export default function CompanyPickerScreen({
   companies,
@@ -26,6 +26,7 @@ export default function CompanyPickerScreen({
   onBack: () => void
 }) {
   const { colors } = useTheme()
+  const { rtl } = useLocale()
   return (
     <ScrollView
       contentContainerStyle={s.scroll}
@@ -85,7 +86,7 @@ export default function CompanyPickerScreen({
                   </Text>
                 ) : null}
               </View>
-              <Text style={[s.chevron, { color: colors.textMuted }]}>‹</Text>
+              <Text style={[s.chevron, { color: colors.textMuted }]}>{rtl ? '‹' : '›'}</Text>
             </Pressable>
           )
         })}
@@ -103,7 +104,7 @@ export default function CompanyPickerScreen({
   )
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 22, gap: spacing.lg },
   head: { alignItems: 'center', gap: spacing.sm },
   title: {
@@ -140,14 +141,14 @@ const s = StyleSheet.create({
   name: {
     fontSize: font.size.xl,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.xl),
     ...baseText,
   },
   meta: {
     fontSize: font.size.sm,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
   },
@@ -164,4 +165,4 @@ const s = StyleSheet.create({
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
   },
-})
+}))

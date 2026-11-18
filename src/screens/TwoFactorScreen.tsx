@@ -12,7 +12,7 @@ import { Banner, Card, GradientButton } from '../components/ui'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, MIN_TOUCH, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t } from '../i18n'
+import { t, localeStyles, useLocale } from '../i18n'
 
 export default function TwoFactorScreen({
   username,
@@ -120,7 +120,7 @@ export default function TwoFactorScreen({
   )
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   flex: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 22 },
   card: { gap: spacing.xl },
@@ -154,7 +154,7 @@ const s = StyleSheet.create({
   label: {
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
   },
@@ -188,4 +188,4 @@ const s = StyleSheet.create({
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
   },
-})
+}))

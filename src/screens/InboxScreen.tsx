@@ -17,7 +17,7 @@ import { Icon } from '../components/Icon'
 import { ScreenHeader } from '../components/ui'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { getRequestTypeAppearance } from '../constants/requestTypes'
-import { t, formatNumber, formatDateShort, formatSince } from '../i18n'
+import { t, formatNumber, formatDateShort, formatSince, localeStyles, useLocale } from '../i18n'
 import { DAY_FORMS } from '../i18n/plural'
 
 const FILTERS: { key: RequestType | 'all'; label: string; icon: string }[] = [
@@ -284,6 +284,7 @@ function RequestCard({
   colors: ThemeColors
 }) {
   const appearance = getRequestTypeAppearance(item.request_type, colors)
+  const { rtl } = useLocale()
   const timestamp = new Date(item.source_created_at).getTime()
   const ageInHours = Number.isNaN(timestamp) ? 0 : (Date.now() - timestamp) / 3_600_000
   const date = ageInHours > 48
@@ -326,7 +327,7 @@ function RequestCard({
             {date && ageInHours > 48 ? <View style={[s.staleDot, { backgroundColor: colors.warning }]} /> : null}
             <Text style={[s.when, { color: colors.textMuted }]} numberOfLines={1} ellipsizeMode="tail">{date}</Text>
           </View>
-          <Icon name="chevron-left" size={18} color={colors.textMuted} accessible={false} />
+          <Icon name={rtl ? "chevron-left" : "chevron-right"} size={18} color={colors.textMuted} accessible={false} />
         </View>
       </View>
     </Pressable>
@@ -365,7 +366,7 @@ function formatRequestDate(iso: string): string {
   return formatDateShort(date)
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   screen: { flex: 1 },
   tabs: {
     flexDirection: 'row',
@@ -402,10 +403,10 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   tabBadgeText: { fontSize: font.size.xs, fontFamily: font.familyBold, lineHeight: lineHeightFor(font.size.xs), ...baseText },
-  filterScroll: { flexGrow: 0, height: 60, direction: 'rtl' },
+  filterScroll: { flexGrow: 0, height: 60, direction: L.dir },
   filters: {
     flexDirection: 'row',
-    direction: 'rtl',
+    direction: L.dir,
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
@@ -426,7 +427,7 @@ const s = StyleSheet.create({
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
   emptyList: { flexGrow: 1, justifyContent: 'center' },
   card: { borderWidth: 1, borderRadius: 20, padding: 14 },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, direction: 'rtl' },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, direction: L.dir },
   requestIcon: {
     width: 48,
     height: 48,
@@ -435,14 +436,14 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   cardText: { flex: 1, alignItems: 'flex-start', gap: spacing.xs },
-  name: { alignSelf: 'stretch', textAlign: 'right', fontSize: 15, fontFamily: font.familyBold, lineHeight: lineHeightFor(15), ...baseText },
+  name: { alignSelf: 'stretch', textAlign: L.align, fontSize: 15, fontFamily: font.familyBold, lineHeight: lineHeightFor(15), ...baseText },
   typeBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill },
   typeBadgeText: { fontSize: font.size.xs, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.xs), ...baseText },
-  detail: { alignSelf: 'stretch', textAlign: 'right', fontSize: font.size.md, lineHeight: lineHeightFor(font.size.md), fontFamily: font.family, ...baseText },
+  detail: { alignSelf: 'stretch', textAlign: L.align, fontSize: font.size.md, lineHeight: lineHeightFor(font.size.md), fontFamily: font.family, ...baseText },
   cardMeta: { width: 64, flexShrink: 0, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'space-between' },
   dateRow: { width: '100%', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
   staleDot: { width: 7, height: 7, borderRadius: radius.pill },
-  when: { fontSize: font.size.xs, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.xs), ...baseText },
+  when: { fontSize: font.size.xs, fontFamily: font.family, textAlign: L.align, lineHeight: lineHeightFor(font.size.xs), ...baseText },
   skeletonCard: {
     minHeight: 86,
     borderWidth: 1,
@@ -465,4 +466,4 @@ const s = StyleSheet.create({
   emptyTitle: { fontSize: font.size.title, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.title), ...baseText },
   emptyDescription: { fontSize: font.size.sm, fontFamily: font.family, textAlign: 'center', lineHeight: lineHeightFor(font.size.sm), ...baseText },
   foot: { fontSize: font.size.sm, fontFamily: font.family, textAlign: 'center', lineHeight: lineHeightFor(font.size.sm), marginVertical: spacing.sm, ...baseText },
-})
+}))

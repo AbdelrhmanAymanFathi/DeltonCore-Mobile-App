@@ -23,7 +23,7 @@ import {
 import { Icon } from '../components/Icon'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t } from '../i18n'
+import { t, localeStyles, useLocale } from '../i18n'
 
 interface Props {
   requestId: string
@@ -293,7 +293,7 @@ function initials(name: string) {
   return parts.slice(0, 2).map((p) => p[0]).join(' ')
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   screen: { flex: 1 },
   body: { padding: spacing.lg, gap: spacing.md },
   center: {
@@ -336,14 +336,14 @@ const s = StyleSheet.create({
   employeeName: {
     fontSize: font.size.lg,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.lg),
     ...baseText,
   },
   employeeMeta: {
     fontSize: font.size.sm,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     marginTop: 3,
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
@@ -351,7 +351,7 @@ const s = StyleSheet.create({
   sectionLabel: {
     fontSize: font.size.sm,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     marginBottom: spacing.md,
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
@@ -362,14 +362,14 @@ const s = StyleSheet.create({
   timelineTitle: {
     fontSize: font.size.md,
     fontFamily: font.familySemiBold,
-    textAlign: 'right',
+    textAlign: L.align,
     lineHeight: lineHeightFor(font.size.md),
     ...baseText,
   },
   timelineReason: {
     fontSize: font.size.sm,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     marginTop: 3,
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
@@ -380,7 +380,7 @@ const s = StyleSheet.create({
     borderRadius: radius.md,
     fontSize: font.size.lg,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     textAlignVertical: 'top',
     lineHeight: lineHeightFor(font.size.lg),
     ...baseText,
@@ -388,7 +388,7 @@ const s = StyleSheet.create({
   reasonHint: {
     fontSize: font.size.sm,
     fontFamily: font.family,
-    textAlign: 'right',
+    textAlign: L.align,
     marginTop: spacing.sm,
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
@@ -404,4 +404,4 @@ const s = StyleSheet.create({
   flex2: { flex: 2 },
   pill: { paddingHorizontal: 11, paddingVertical: 4, borderRadius: radius.pill },
   pillText: { fontSize: font.size.sm, fontFamily: font.familySemiBold, lineHeight: lineHeightFor(font.size.sm), ...baseText },
-})
+}))

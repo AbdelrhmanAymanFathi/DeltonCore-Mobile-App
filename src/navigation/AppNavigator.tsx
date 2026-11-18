@@ -13,7 +13,7 @@ import { Icon } from '../components/Icon'
 import { PressableScale as Pressable } from '../components/ui/PressableScale'
 import { useTheme } from '../theme/ThemeProvider'
 import { font, radius, spacing, lineHeightFor, baseText } from '../theme/tokens'
-import { t, formatNumber, tCount } from '../i18n'
+import { t, formatNumber, tCount, localeStyles, useLocale } from '../i18n'
 import { REQUEST_FORMS } from '../i18n/plural'
 
 type Tab = 'home' | 'inbox' | 'employees'
@@ -284,7 +284,7 @@ function TabButton({
   )
 }
 
-const s = StyleSheet.create({
+const s = localeStyles((L) => ({
   root: { flex: 1 },
   content: { flex: 1 },
   bar: {
@@ -360,4 +360,4 @@ const s = StyleSheet.create({
     lineHeight: lineHeightFor(font.size.sm),
     ...baseText,
   },
-})
+}))

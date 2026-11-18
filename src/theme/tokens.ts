@@ -191,10 +191,10 @@ export const elevationLight = {
 
 /** Request type badges — keys match ApprovalRequest.request_type. */
 export const requestTypeBadge = {
-  leave: { bg: 'brand', fg: 'brandDeep', label: t('requests.leave') },
-  loan: { bg: 'warning', fg: 'warning', label: t('requests.loan') },
-  mission: { bg: 'info', fg: 'info', label: t('requests.mission') },
-  penalty: { bg: 'crimson', fg: 'crimson', label: t('requests.penalty') },
+  leave: { bg: 'brand', fg: 'brandDeep', get label() { return t('requests.leave') } },
+  loan: { bg: 'warning', fg: 'warning', get label() { return t('requests.loan') } },
+  mission: { bg: 'info', fg: 'info', get label() { return t('requests.mission') } },
+  penalty: { bg: 'crimson', fg: 'crimson', get label() { return t('requests.penalty') } },
 } as const
 
 /** Resolve a semantic color name to an actual hex from the active theme. */

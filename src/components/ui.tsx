@@ -22,7 +22,7 @@ import {
 import type { RequestType } from '../api/types'
 import { Icon } from './Icon'
 import { PressableScale } from './ui/PressableScale'
-import { t } from '../i18n'
+import { t, useLocale } from '../i18n'
 
 type Tone = 'approve' | 'reject' | 'neutral'
 
@@ -216,6 +216,7 @@ export function ScreenHeader({
   right?: React.ReactNode
 }) {
   const { colors } = useTheme()
+  const { align, rtl } = useLocale()
   const insets = useSafeAreaInsets()
   return (
     <View style={[
@@ -244,10 +245,10 @@ export function ScreenHeader({
             justifyContent: 'center',
           }}
         >
-          <Icon name="chevron-right" size={24} color={colors.textSecondary} accessible={false} />
+          <Icon name={rtl ? "chevron-right" : "chevron-left"} size={24} color={colors.textSecondary} accessible={false} />
         </PressableScale>
       ) : null}
-      <Text style={{ flex: 1, color: colors.textPrimary, fontSize: font.size.title, fontFamily: font.familySemiBold, textAlign: 'right', lineHeight: lineHeightFor(font.size.title), ...baseText }} numberOfLines={1} ellipsizeMode="tail">
+      <Text style={{ flex: 1, color: colors.textPrimary, fontSize: font.size.title, fontFamily: font.familySemiBold, textAlign: align, lineHeight: lineHeightFor(font.size.title), ...baseText }} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
       {right}
@@ -284,6 +285,7 @@ export function DetailRows({
   rows: { label: string; value: string; emphasis?: 'good' | 'bad' }[]
 }) {
   const { colors } = useTheme()
+  const { align, rtl } = useLocale()
   return (
     <Card style={{ paddingVertical: 0, paddingHorizontal: spacing.lg }}>
       {rows.map((r, i) => (
@@ -299,12 +301,12 @@ export function DetailRows({
             i < rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
           ]}
         >
-          <Text style={{ flex: 1, color: colors.textMuted, fontSize: font.size.md, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.md), ...baseText }}>
+          <Text style={{ flex: 1, color: colors.textMuted, fontSize: font.size.md, fontFamily: font.family, textAlign: align, lineHeight: lineHeightFor(font.size.md), ...baseText }}>
             {r.label}
           </Text>
           <Text
             style={[
-              { flexShrink: 1, color: colors.textPrimary, fontSize: font.size.base, fontFamily: font.familySemiBold, textAlign: 'right', maxWidth: '62%', lineHeight: lineHeightFor(font.size.base), ...baseText },
+              { flexShrink: 1, color: colors.textPrimary, fontSize: font.size.base, fontFamily: font.familySemiBold, textAlign: align, maxWidth: '62%', lineHeight: lineHeightFor(font.size.base), ...baseText },
               r.emphasis === 'good' && { color: colors.success },
               r.emphasis === 'bad' && { color: colors.crimson },
             ]}
@@ -337,6 +339,7 @@ export function Banner({
   children: React.ReactNode
 }) {
   const { colors } = useTheme()
+  const { align, rtl } = useLocale()
   const iconMap = { warn: 'alert-triangle', error: 'alert-circle', info: 'info' }
   const map = {
     warn: { bg: colors.tintBrand, bd: colors.warning, fg: colors.warning },
@@ -348,7 +351,7 @@ export function Banner({
       { borderWidth: 1, borderColor: map.bd, borderRadius: radius.md, padding: spacing.md, backgroundColor: map.bg },
     ]}>
       <Icon name={iconMap[tone]} size={14} color={map.fg} accessible={false} />
-      <Text style={{ fontSize: 12.5, lineHeight: 21, fontFamily: font.family, textAlign: 'right', color: map.fg, ...baseText }}>{children}</Text>
+      <Text style={{ fontSize: 12.5, lineHeight: 21, fontFamily: font.family, textAlign: align, color: map.fg, ...baseText }}>{children}</Text>
     </View>
   )
 }
@@ -363,13 +366,14 @@ export function Field({
   children: React.ReactNode
 }) {
   const { colors } = useTheme()
+  const { align, rtl } = useLocale()
   return (
     <View style={{ gap: spacing.sm }}>
-      <Text style={{ color: colors.textSecondary, fontSize: font.size.md, fontFamily: font.familySemiBold, textAlign: 'right', lineHeight: lineHeightFor(font.size.md), ...baseText }}>
+      <Text style={{ color: colors.textSecondary, fontSize: font.size.md, fontFamily: font.familySemiBold, textAlign: align, lineHeight: lineHeightFor(font.size.md), ...baseText }}>
         {label}
       </Text>
       {children}
-      {hint ? <Text style={{ color: colors.textMuted, fontSize: font.size.sm, fontFamily: font.family, textAlign: 'right', lineHeight: lineHeightFor(font.size.sm), ...baseText }}>{hint}</Text> : null}
+      {hint ? <Text style={{ color: colors.textMuted, fontSize: font.size.sm, fontFamily: font.family, textAlign: align, lineHeight: lineHeightFor(font.size.sm), ...baseText }}>{hint}</Text> : null}
     </View>
   )
 }

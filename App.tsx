@@ -18,11 +18,11 @@ import { StatusBarCover } from './src/components/StatusBarCover'
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider'
 import { font, lineHeightFor, baseText } from './src/theme/tokens'
 import { PressableScale } from './src/components/ui/PressableScale'
-import { t } from './src/i18n'
+import { t, LocaleProvider, useLocale } from './src/i18n'
 
-// RTL must be forced before the first render. On Android this only takes full
-// effect after a restart, which is why it is set here and also declared in
-// app.json — a fresh install comes up right the first time.
+// The native layout flag stays RTL for every language: the active language's
+// direction is applied by the root view's `direction` style (see Root), so the
+// language can be switched at runtime with no app restart.
 I18nManager.allowRTL(true)
 I18nManager.forceRTL(true)
 
@@ -48,6 +48,7 @@ export default function App() {
   if (!fontsLoaded) return null
 
   return (
+    <LocaleProvider>
     <ThemeProvider>
       <SafeAreaProvider>
         <AuthProvider>
@@ -56,11 +57,13 @@ export default function App() {
         </AuthProvider>
       </SafeAreaProvider>
     </ThemeProvider>
+    </LocaleProvider>
   )
 }
 
 function Root() {
   const { status, session, authError, retryAuth } = useAuth()
+  const { dir } = useLocale()
 
   let screen: React.ReactNode
   if (status === 'loading') {
@@ -84,7 +87,7 @@ function Root() {
   }
 
   return (
-    <View style={s.root}>
+    <View style={[s.root, { direction: dir }]}>
       {screen}
       <StatusBarCover />
       <MockIndicator />
