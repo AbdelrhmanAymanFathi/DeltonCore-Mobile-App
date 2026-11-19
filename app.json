@@ -21,7 +21,9 @@
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "blockedPermissions": [
         "ACCESS_BACKGROUND_LOCATION"
@@ -55,6 +57,9 @@
         "rtl": "الاتجاه يُضبط وقت التشغيل من اللغة المختارة (جذر الواجهة في App.tsx عبر خاصية direction)، فالتبديل بين العربية والإنجليزية لا يحتاج إعادة تشغيل.",
         "backgroundLocation": "ACCESS_BACKGROUND_LOCATION محجوب عمدًا: التطبيق لا يحتاج تتبعًا في الخلفية، وطلبه يثير قلق المستخدمين ويستدعي مراجعة إضافية لو نُشر على المتاجر لاحقًا."
       }
+    },
+    "ios": {
+      "bundleIdentifier": "com.deltoncore.supervisor"
     }
   }
 }
